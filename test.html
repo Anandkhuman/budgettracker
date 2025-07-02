@@ -123,43 +123,42 @@
         .btn:hover { background-color: #d63031; transform: scale(1.02); }
         .btn:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-color); }
 
-        /* History Controls & Reports */
+        /* --- History Controls & Reports (Single Line, Non-Scrollable) --- */
         .history-controls {
             margin-top: 30px; border-bottom: 1px solid var(--border-color);
             padding-bottom: 15px; margin-bottom: 15px;
         }
         .history-controls h3 { border-bottom: none; margin: 0 0 15px 0; }
-        .controls-row {
+        
+        .filter-controls-row {
             display: flex;
-            flex-wrap: nowrap; /* Keep items on one line */
-            align-items: center;
-            gap: 10px; /* Spacing between elements */
-            overflow-x: auto; /* Allow horizontal scrolling if needed */
-            padding-bottom: 5px; /* Add space for scrollbar */
+            gap: 10px;
+            margin-bottom: 10px;
         }
+
         .filter-container {
+            flex: 1; /* Make items flexible to fit the line */
             display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0; /* Prevent filter containers from shrinking */
+            flex-direction: column;
+            gap: 5px;
         }
         .filter-container label {
             margin: 0;
             font-size: 14px;
             font-weight: 400;
-            white-space: nowrap; /* Prevent label from wrapping */
+            white-space: nowrap;
         }
         .filter-container select, .filter-container input[type="date"] {
             padding: 8px; 
-            width: auto; 
+            width: 100%; 
             font-size: 14px;
         }
         .report-btn {
             cursor: pointer; background-color: var(--secondary-color); border: 0; color: #fff;
-            display: block; font-size: 14px; padding: 8px 12px; border-radius: 8px;
-            font-weight: 500; transition: background-color 0.3s ease;
-            margin-left: auto; /* Pushes the button to the far right */
-            flex-shrink: 0; /* Prevent button from shrinking */
+            display: block; font-size: 16px; padding: 12px; border-radius: 8px;
+            width: 100%;
+            margin-top: 10px; /* Space above the button */
+            font-weight: 600; transition: background-color 0.3s ease;
         }
         .report-btn:hover { background-color: var(--accent-color); }
 
@@ -231,6 +230,38 @@
         .overview-text .percentage { font-size: 2.5rem; font-weight: 700; }
         .overview-text .label { font-size: 1rem; color: #aaa; }
         
+        /* --- Loading Animation --- */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 2000;
+            color: var(--text-color);
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-overlay p {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         /* Responsive Media Queries */
         @media (max-width: 550px) {
             .app-wrapper { width: 100%; }
@@ -286,7 +317,7 @@
             
             <div class="history-controls">
                 <h3>History</h3>
-                <div class="controls-row">
+                <div class="filter-controls-row">
                     <div class="filter-container">
                         <label for="filter-transactions">Show:</label>
                         <select id="filter-transactions">
@@ -303,8 +334,8 @@
                         <label for="end-date">To:</label>
                         <input type="date" id="end-date">
                     </div>
-                    <button id="download-report-btn" class="report-btn">Report</button>
                 </div>
+                <button id="download-report-btn" class="report-btn">Download PDF Report</button>
             </div>
             <ul id="list" class="list"></ul>
         </div>
@@ -381,6 +412,12 @@
         </div>
     </div>
 
+    <!-- Loading Overlay for PDF Generation -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Generating Report...</p>
+    </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -434,7 +471,8 @@ document.addEventListener('DOMContentLoaded', () => {
           filterControl = document.getElementById('filter-transactions'),
           downloadReportBtn = document.getElementById('download-report-btn'),
           startDateInput = document.getElementById('start-date'),
-          endDateInput = document.getElementById('end-date');
+          endDateInput = document.getElementById('end-date'),
+          loadingOverlay = document.getElementById('loading-overlay');
     
     const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
     const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
@@ -546,72 +584,96 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- PDF REPORT GENERATION ---
+    // --- PDF REPORT GENERATION (WITH LOADING ANIMATION) ---
     function generatePDF() {
-        const { jsPDF } = window.jspdf;
-        if (!jsPDF) {
-            alert('PDF library not loaded. Please try again.');
-            return;
-        }
-        const doc = new jsPDF();
-        
-        const dataToReport = getFilteredTransactions();
-        const filterType = filterControl.options[filterControl.selectedIndex].text;
-        const startDate = startDateInput.value || 'Start';
-        const endDate = endDateInput.value || 'End';
+        loadingOverlay.style.display = 'flex';
 
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
-        doc.text('Budget Transaction Report', 105, 20, { align: 'center' });
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Report Generated: ${new Date().toLocaleString()}`, 105, 25, { align: 'center' });
-        doc.text(`Filters Applied: ${filterType} transactions from ${startDate} to ${endDate}`, 105, 30, { align: 'center' });
-
-        const amounts = dataToReport.map(t => t.amount);
-        const total = amounts.reduce((acc, item) => acc + item, 0);
-        const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
-        const expense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0));
-        
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Filtered Summary', 14, 45);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Total of Filtered Items: ${formatMoney(total)}`, 14, 53);
-        doc.text(`Filtered Income: +${formatMoney(income)}`, 14, 59);
-        doc.text(`Filtered Expense: -${formatMoney(expense)}`, 14, 65);
-        
-        const tableColumn = ["Date & Time", "Description", "Category", "Amount (INR)"];
-        const tableRows = [];
-
-        dataToReport.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
-            tableRows.push([
-                formatDateTime(t.date),
-                t.text,
-                t.category,
-                formatMoney(t.amount)
-            ]);
-        });
-
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 75,
-            theme: 'grid',
-            headStyles: { fillColor: [15, 52, 96] },
-            didParseCell: function (data) {
-                if (data.section === 'body' && data.column.index === 3) {
-                    if (data.cell.raw.startsWith('-')) {
-                        data.cell.styles.textColor = [192, 57, 43];
-                    } else {
-                        data.cell.styles.textColor = [46, 204, 113];
-                    }
+        // Use a timeout to allow the UI to update and show the spinner before blocking the thread
+        setTimeout(() => {
+            try {
+                const { jsPDF } = window.jspdf;
+                if (!jsPDF) {
+                    alert('PDF library not loaded. Please try again.');
+                    return;
                 }
+                const doc = new jsPDF();
+                
+                const dataToReport = getFilteredTransactions();
+                const filterType = filterControl.options[filterControl.selectedIndex].text;
+                const startDate = startDateInput.value || 'Start';
+                const endDate = endDateInput.value || 'End';
+
+                // --- PDF Header ---
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(20);
+                doc.text('Budget Transaction Report', 105, 20, { align: 'center' });
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Report Generated: ${new Date().toLocaleString('en-IN')}`, 105, 28, { align: 'center' });
+                doc.text(`Filters: ${filterType} transactions from ${startDate} to ${endDate}`, 105, 34, { align: 'center' });
+                
+                // --- PDF Summary ---
+                const amounts = dataToReport.map(t => t.amount);
+                const total = amounts.reduce((acc, item) => acc + item, 0);
+                const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
+                const expense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0));
+                
+                doc.autoTable({
+                    body: [
+                        ['Filtered Income', `+${formatMoney(income)}`],
+                        ['Filtered Expense', `-${formatMoney(expense)}`],
+                        ['Net Result for Period', formatMoney(total)],
+                    ],
+                    startY: 45,
+                    theme: 'grid',
+                    styles: { font: 'helvetica', fontStyle: 'bold' },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+
+                // --- PDF Main Table ---
+                const tableColumn = ["Date & Time", "Description", "Category", "Amount (INR)"];
+                const tableRows = [];
+
+                dataToReport.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+                    tableRows.push([
+                        formatDateTime(t.date),
+                        t.text,
+                        t.category,
+                        { content: formatMoney(t.amount), styles: { halign: 'right' } }
+                    ]);
+                });
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: doc.lastAutoTable.finalY + 10,
+                    theme: 'striped',
+                    headStyles: { fillColor: [22, 33, 62] },
+                    didParseCell: function (data) {
+                        if (data.section === 'body' && data.column.index === 3) {
+                            if (data.cell.raw.content.startsWith('-')) {
+                                data.cell.styles.textColor = [192, 57, 43];
+                            } else {
+                                data.cell.styles.textColor = [46, 204, 113];
+                            }
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    },
+                    didDrawPage: function (data) {
+                        // --- PDF Footer ---
+                        const pageCount = doc.internal.getNumberOfPages();
+                        doc.setFontSize(10);
+                        doc.text('Page ' + doc.internal.getPageInfo().pageNumber + ' of ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                    }
+                });
+                
+                const date = new Date().toISOString().slice(0, 10);
+                doc.save(`budget-report-${date}.pdf`);
+            } finally {
+                // Ensure the overlay is hidden, even if an error occurs
+                loadingOverlay.style.display = 'none';
             }
-        });
-        
-        const date = new Date().toISOString().slice(0, 10);
-        doc.save(`budget-report-${date}.pdf`);
+        }, 50); // 50ms delay
     }
 
     // --- DASHBOARD ---
@@ -678,16 +740,15 @@ document.addEventListener('DOMContentLoaded', () => {
             currency: 'INR',
             minimumFractionDigits: 2,
         });
-        return sign + formatter.format(Math.abs(number)).replace(/^(\D+)/, '₹');
+        return sign + formatter.format(Math.abs(number)).replace(/^(\D+)/, '₹ ');
     }
 
     function formatDateTime(isoString) {
         const date = new Date(isoString);
-        const options = {
-            year: 'numeric', month: 'numeric', day: 'numeric',
+        return date.toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric',
             hour: 'numeric', minute: 'numeric', hour12: true
-        };
-        return date.toLocaleString('en-IN', options);
+        }).replace(/,/g, '');
     }
 
     function updateToggleUI() {
