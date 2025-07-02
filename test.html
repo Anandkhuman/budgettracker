@@ -584,17 +584,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- PDF REPORT GENERATION (WITH LOADING ANIMATION) ---
+    // --- PDF REPORT GENERATION (WITH 5-SECOND ANIMATION) ---
     function generatePDF() {
+        // 1. Show the loading overlay immediately
         loadingOverlay.style.display = 'flex';
-
-        // Use a timeout to allow the UI to update and show the spinner before blocking the thread
+        
+        // 2. Set a 5-second timeout to simulate generation
         setTimeout(() => {
             try {
                 const { jsPDF } = window.jspdf;
                 if (!jsPDF) {
                     alert('PDF library not loaded. Please try again.');
-                    return;
+                    // The 'finally' block will still hide the overlay
+                    return; 
                 }
                 const doc = new jsPDF();
                 
@@ -669,11 +671,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const date = new Date().toISOString().slice(0, 10);
                 doc.save(`budget-report-${date}.pdf`);
+
+            } catch(error) {
+                console.error("Failed to generate PDF:", error);
+                alert("Sorry, there was an error generating the report.");
             } finally {
-                // Ensure the overlay is hidden, even if an error occurs
+                // 3. Hide the loading overlay after the process is complete (or fails)
                 loadingOverlay.style.display = 'none';
             }
-        }, 50); // 50ms delay
+        }, 5000); // 5000 milliseconds = 5 seconds
     }
 
     // --- DASHBOARD ---
@@ -733,7 +739,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- HELPERS & UI BINDING ---
-    // FIXED: This function is now more robust for PDF generation.
     function formatMoney(number) {
         const sign = number < 0 ? "- " : "";
         const absNumber = Math.abs(number);
