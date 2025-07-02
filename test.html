@@ -553,7 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${transaction.text}
                     <span class="category">${transaction.category} • ${formatDateTime(transaction.date)}</span>
                 </div>
-                <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
+                <span>${formatMoney(transaction.amount)}</span>
             `;
             list.appendChild(item);
             gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
@@ -733,15 +733,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- HELPERS & UI BINDING ---
+    // FIXED: This function is now more robust for PDF generation.
     function formatMoney(number) {
-        const sign = number < 0 ? "-" : "";
-        const formatter = new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            minimumFractionDigits: 2,
+        const sign = number < 0 ? "- " : "";
+        const absNumber = Math.abs(number);
+        const formattedNumber = absNumber.toLocaleString('en-IN', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
         });
-        // Replace the Rupee symbol with 'Rs.' for PDF compatibility
-        return formatter.format(Math.abs(number)).replace('₹', `${sign}Rs. `).replace('.00', '');
+        return `${sign}Rs. ${formattedNumber}`;
     }
 
     function formatDateTime(isoString) {
