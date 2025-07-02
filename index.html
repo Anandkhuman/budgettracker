@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Budget Tracker</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- CDN for Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --primary-color: #16213e;
+            --secondary-color: #0f3460;
+            --accent-color: #e94560;
+            --text-color: #e0e0e0;
+            --income-color: #2ecc71;
+            --expense-color: #c0392b;
+            --glass-bg: rgba(22, 33, 62, 0.65);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #three-canvas {
+            position: fixed; top: 0; left: 0; z-index: -1;
+        }
+
+        .app-wrapper {
+            width: 95%;
+            max-width: 500px;
+            z-index: 1;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            margin-top: 15px;
+        }
+
+        /* Navigation */
+        .nav {
+            display: flex;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            padding: 5px;
+        }
+        .nav-btn {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background-color 0.3s ease;
+        }
+        .nav-btn.active {
+            background-color: var(--accent-color);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+        
+        .page { display: none; }
+        .page.active { display: block; }
+        
+        h1, h3, h4 { letter-spacing: 1px; }
+        h1 { margin: 0 0 10px; text-align: center; font-weight: 700; color: #fff; }
+        h4 { margin: 0; text-transform: uppercase; font-weight: 600; }
+
+        /* Tracker Page Styles */
+        #balance { font-size: 2.5rem; letter-spacing: 1px; font-weight: 700; text-align: center; margin-bottom: 25px; }
+
+        .summary-container {
+            background: rgba(0, 0, 0, 0.2); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); border-radius: 15px;
+            padding: 20px; display: flex; justify-content: space-between; margin: 20px 0;
+        }
+        .summary-container > div { flex: 1; text-align: center; }
+        .summary-container > div:first-of-type { border-right: 1px solid var(--border-color); }
+        .money { font-size: 1.5rem; letter-spacing: 1px; margin: 5px 0; font-weight: 600; }
+        .money.plus { color: var(--income-color); }
+        .money.minus { color: var(--expense-color); }
+
+        h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 15px; font-weight: 600; }
+        label { display: block; margin: 10px 0; font-weight: 400; }
+        
+        input[type='text'], input[type='number'], select {
+            border: 1px solid var(--border-color); border-radius: 8px; display: block; font-size: 16px;
+            padding: 12px; width: 100%; background: rgba(0, 0, 0, 0.2); color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+        }
+        select { cursor: pointer; }
+
+        .btn {
+            cursor: pointer; background-color: var(--secondary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 0; color: #fff; display: block; font-size: 16px; margin: 20px 0 30px;
+            padding: 12px; width: 100%; border-radius: 8px; font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn:hover { background-color: var(--accent-color); transform: scale(1.02); }
+        .btn:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-color); }
+
+        /* --- NEW ANIMATED TOGGLE SWITCH --- */
+        .type-toggle { margin: 25px 0; }
+        .toggle-switch {
+            position: relative;
+            display: block;
+            width: 100%;
+            cursor: pointer;
+        }
+        .toggle-switch input { display: none; } /* Hide the actual checkbox */
+
+        .switch-body {
+            position: relative;
+            height: 44px;
+            background-color: var(--expense-color);
+            border-radius: 22px;
+            padding: 4px;
+            transition: background-color 0.4s ease-in-out;
+            display: flex;
+            align-items: center;
+        }
+        .thumb {
+            position: absolute;
+            width: calc(50% - 4px);
+            height: 36px;
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 18px;
+            left: 4px;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .toggle-label {
+            width: 50%;
+            text-align: center;
+            font-weight: 600;
+            z-index: 1;
+            transition: color 0.4s ease-in-out;
+        }
+        .toggle-label.debit { color: #fff; }
+        .toggle-label.credit { color: rgba(255,255,255,0.5); }
+        
+        /* State when checkbox is checked (Credit) */
+        .toggle-switch input:checked + .switch-body {
+            background-color: var(--income-color);
+        }
+        .toggle-switch input:checked + .switch-body .thumb {
+            transform: translateX(100%);
+        }
+        .toggle-switch input:checked + .switch-body .toggle-label.debit {
+            color: rgba(255,255,255,0.5);
+        }
+        .toggle-switch input:checked + .switch-body .toggle-label.credit {
+            color: #fff;
+        }
+
+        .list { list-style-type: none; padding: 0; margin-bottom: 0; }
+        .list li {
+            background-color: rgba(0, 0, 0, 0.2); color: var(--text-color); display: flex;
+            justify-content: space-between; align-items: center; position: relative;
+            padding: 12px; margin: 10px 0; border-radius: 8px; border-right: 5px solid;
+            transition: opacity 0.3s ease;
+        }
+        .list li.plus { border-color: var(--income-color); }
+        .list li.minus { border-color: var(--expense-color); }
+        .list li .details { display: flex; flex-direction: column; }
+        .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; }
+        .delete-btn {
+            cursor: pointer; background-color: var(--accent-color); border: 0; color: #fff;
+            font-size: 18px; line-height: 20px; padding: 5px 8px; border-radius: 5px;
+            position: absolute; top: 50%; left: 0; transform: translate(-100%, -50%);
+            opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .list li:hover .delete-btn { opacity: 1; transform: translate(-120%, -50%); }
+        
+        /* Dashboard Page Styles */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .chart-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .budget-overview {
+            position: relative; display: flex; justify-content: center; align-items: center;
+        }
+        .budget-overview svg { width: 200px; height: 200px; transform: rotate(-90deg); }
+        .budget-overview circle { fill: none; stroke-width: 20; }
+        .budget-overview .bg-circle { stroke: rgba(255,255,255,0.1); }
+        .budget-overview .progress-circle { stroke: url(#gradient); stroke-linecap: round; }
+        .overview-text { position: absolute; text-align: center; }
+        .overview-text .percentage { font-size: 2.5rem; font-weight: 700; }
+        .overview-text .label { font-size: 1rem; color: #aaa; }
+        
+        @media (max-width: 550px) {
+            .app-wrapper { width: 100%; }
+            .container { border-radius: 0; min-height: calc(100vh - 80px); }
+            .nav { border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+    
+    <canvas id="three-canvas"></canvas>
+
+    <div class="app-wrapper">
+        <nav class="nav">
+            <button class="nav-btn active" data-page="tracker">Tracker</button>
+            <button class="nav-btn" data-page="dashboard">Dashboard</button>
+        </nav>
+        
+        <div id="tracker" class="page active container">
+            <!-- Tracker Content -->
+            <h4>Your Balance</h4>
+            <h1 id="balance">$0.00</h1>
+
+            <div class="summary-container">
+                <div>
+                    <h4>Income</h4>
+                    <p id="money-plus" class="money plus">+$0.00</p>
+                </div>
+                <div>
+                    <h4>Expense</h4>
+                    <p id="money-minus" class="money minus">-$0.00</p>
+                </div>
+            </div>
+
+            <h3>History</h3>
+            <ul id="list" class="list"></ul>
+
+            <h3>Add New Transaction</h3>
+            <form id="form">
+                <div class="type-toggle">
+                    <label>Transaction Type</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="transaction-type"> <!-- Unchecked: Debit, Checked: Credit -->
+                        <div class="switch-body">
+                            <div class="thumb"></div>
+                            <div class="toggle-label debit">Debit</div>
+                            <div class="toggle-label credit">Credit</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="form-control">
+                    <label for="text">Description</label>
+                    <input type="text" id="text" placeholder="e.g., Groceries" autocomplete="off"/>
+                </div>
+                <div class="form-control">
+                    <label for="category">Category</label>
+                    <select id="category">
+                        <option value="Salary">Salary</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label for="amount">Amount</label>
+                    <input type="number" id="amount" placeholder="Enter expense amount..." autocomplete="off" min="0" step="0.01"/>
+                </div>
+                <button class="btn">Add Transaction</button>
+            </form>
+        </div>
+
+        <div id="dashboard" class="page container">
+            <!-- Dashboard Content -->
+            <h1>Dashboard</h1>
+            <div class="dashboard-grid">
+                <div class="chart-container">
+                    <h3>Budget Overview</h3>
+                    <div class="budget-overview">
+                        <svg>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" style="stop-color:var(--income-color);stop-opacity:1" />
+                                  <stop offset="100%" style="stop-color:var(--accent-color);stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="bg-circle" cx="100" cy="100" r="80"></circle>
+                            <circle id="progress-circle" class="progress-circle" cx="100" cy="100" r="80"></circle>
+                        </svg>
+                        <div class="overview-text">
+                            <span class="percentage" id="budget-percentage">0%</span>
+                            <span class="label">of income spent</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <h3>Expense by Category</h3>
+                    <canvas id="category-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // --- THREE.JS BACKGROUND ---
+    let scene, camera, renderer, particles;
+    function initThree() {
+        const canvas = document.getElementById('three-canvas');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const particleCount = 5000;
+        const positions = new Float32Array(particleCount * 3);
+        for(let i = 0; i < particleCount * 3; i++) {
+            positions[i] = (Math.random() - 0.5) * 20;
+        }
+        const particleGeometry = new THREE.BufferGeometry();
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMaterial = new THREE.PointsMaterial({ color: 0x0f3460, size: 0.03, transparent: true, blending: THREE.AdditiveBlending });
+        particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+        camera.position.z = 5;
+        animateThree();
+    }
+    function animateThree() {
+        requestAnimationFrame(animateThree);
+        particles.rotation.x += 0.0001;
+        particles.rotation.y += 0.0002;
+        renderer.render(scene, camera);
+    }
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onWindowResize, false);
+    initThree();
+
+    // --- GSAP PAGE LOAD ANIMATION ---
+    gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
+    gsap.from('.container > *', { duration: 0.8, y: 30, opacity: 0, stagger: 0.1, delay: 0.5 });
+
+    // --- DOM ELEMENTS & APP STATE ---
+    const balance = document.getElementById('balance');
+    const money_plus = document.getElementById('money-plus');
+    const money_minus = document.getElementById('money-minus');
+    const list = document.getElementById('list');
+    const form = document.getElementById('form');
+    const text = document.getElementById('text');
+    const amount = document.getElementById('amount');
+    const category = document.getElementById('category');
+    const transactionType = document.getElementById('transaction-type');
+    
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const pages = document.querySelectorAll('.page');
+
+    const localStorageTransactions = JSON.parse(localStorage.getItem('transactions'));
+    let transactions = localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
+    let categoryChartInstance = null;
+    
+    // --- NAVIGATION LOGIC ---
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pageId = btn.dataset.page;
+            navButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            pages.forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if(pageId === 'dashboard') renderDashboard();
+        });
+    });
+
+    // --- NEW: DYNAMIC UI UPDATE FOR TOGGLE SWITCH ---
+    function updateToggleUI() {
+        if (transactionType.checked) { // Credit (Income)
+            amount.placeholder = "Enter income amount...";
+            category.value = "Salary"; // Default to a common income category
+        } else { // Debit (Expense)
+            amount.placeholder = "Enter expense amount...";
+            category.value = "Groceries"; // Default to a common expense category
+        }
+    }
+    transactionType.addEventListener('change', updateToggleUI);
+
+
+    // --- TRANSACTION LOGIC ---
+    function addTransaction(e) {
+        e.preventDefault();
+        const enteredAmount = +amount.value;
+
+        if (text.value.trim() === '' || amount.value.trim() === '' || enteredAmount <= 0) {
+            gsap.from(form, {x: -10, duration: 0.5, ease: "elastic.out(1, 0.3)"});
+            alert('Please add a description and a valid positive amount.');
+            return;
+        }
+        
+        const finalAmount = transactionType.checked ? enteredAmount : -enteredAmount;
+
+        const transaction = {
+            id: generateID(),
+            text: text.value,
+            amount: finalAmount,
+            category: category.value
+        };
+
+        transactions.push(transaction);
+        addTransactionDOM(transaction);
+        updateValues();
+        updateLocalStorage();
+
+        text.value = '';
+        amount.value = '';
+        // Reset toggle to default (Debit) for next entry
+        transactionType.checked = false;
+        updateToggleUI();
+    }
+
+    function generateID() { return Math.floor(Math.random() * 100000000); }
+
+    function addTransactionDOM(transaction) {
+        const sign = transaction.amount < 0 ? '-' : '+';
+        const item = document.createElement('li');
+        item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
+        
+        item.innerHTML = `
+            <div class="details">
+                ${transaction.text}
+                <span class="category">${transaction.category}</span>
+            </div>
+            <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
+            <button class="delete-btn" onclick="removeTransaction(${transaction.id})">x</button>
+        `;
+        list.appendChild(item);
+        
+        gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
+    }
+
+    function updateValues() {
+        const amounts = transactions.map(t => t.amount);
+        const total = amounts.reduce((acc, item) => (acc += item), 0);
+        const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
+        const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1);
+
+        balance.innerText = formatMoney(total);
+        money_plus.innerText = `+${formatMoney(income)}`;
+        money_minus.innerText = `-${formatMoney(expense)}`;
+    }
+    
+    function formatMoney(number) {
+        return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    window.removeTransaction = function(id) {
+        const transactionEl = event.target.parentElement;
+        gsap.to(transactionEl, { 
+            duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
+            onComplete: () => {
+                transactions = transactions.filter(t => t.id !== id);
+                updateLocalStorage();
+                initTrackerPage();
+            }
+        });
+    }
+
+    function updateLocalStorage() {
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+    }
+    
+    function initTrackerPage() {
+        list.innerHTML = '';
+        transactions.forEach(addTransactionDOM);
+        updateValues();
+        updateToggleUI(); // Set initial placeholder and category
+    }
+    
+    // --- DASHBOARD LOGIC ---
+    function renderDashboard() {
+        const amounts = transactions.map(t => t.amount);
+        const totalIncome = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
+        const totalExpense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0));
+
+        renderBudgetOverview(totalIncome, totalExpense);
+        renderCategoryChart();
+    }
+    
+    function renderBudgetOverview(income, expense) {
+        const percentageElem = document.getElementById('budget-percentage');
+        const progressCircle = document.getElementById('progress-circle');
+        const radius = progressCircle.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+        
+        let percentage = 0;
+        if (income > 0) percentage = Math.min((expense / income) * 100, 100);
+        
+        const offset = circumference - (percentage / 100) * circumference;
+        
+        progressCircle.style.strokeDasharray = circumference;
+        
+        gsap.to(progressCircle, {
+            strokeDashoffset: offset, duration: 1.5, ease: 'power3.out'
+        });
+
+        let animatedValue = { val: parseFloat(percentageElem.innerText) || 0 };
+        gsap.to(animatedValue, {
+            val: percentage, duration: 1.5, ease: 'power3.out',
+            onUpdate: () => {
+                percentageElem.innerText = `${animatedValue.val.toFixed(0)}%`;
+            }
+        });
+    }
+
+    function renderCategoryChart() {
+        if(categoryChartInstance) categoryChartInstance.destroy();
+
+        const expenseTransactions = transactions.filter(t => t.amount < 0);
+        const spendingByCategory = expenseTransactions.reduce((acc, t) => {
+            acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
+            return acc;
+        }, {});
+
+        const labels = Object.keys(spendingByCategory);
+        const data = Object.values(spendingByCategory);
+
+        const ctx = document.getElementById('category-chart').getContext('2d');
+        categoryChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Spending', data: data,
+                    backgroundColor: ['rgba(233, 69, 96, 0.7)', 'rgba(22, 33, 62, 0.7)', 'rgba(15, 52, 96, 0.7)', 'rgba(46, 204, 113, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)', 'rgba(241, 196, 15, 0.7)'],
+                    borderColor: var(--border-color), borderWidth: 1, borderRadius: 5,
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => formatMoney(context.raw) } } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: var(--text-color), font: { family: "'Poppins', sans-serif" } }, grid: { color: var(--border-color) } },
+                    x: { ticks: { color: var(--text-color), font: { family: "'Poppins', sans-serif" } }, grid: { color: 'transparent' } }
+                }
+            }
+        });
+    }
+
+    // --- INITIALIZATION ---
+    initTrackerPage();
+    form.addEventListener('submit', addTransaction);
+});
+</script>
+
+</body>
+</html>
