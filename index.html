@@ -113,6 +113,7 @@
             background-color: var(--accent-color); color: #fff; box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
         }
         .logout-btn {
+            flex: 0 1 auto;
             background-color: var(--secondary-color);
         }
         
@@ -590,18 +591,19 @@ document.addEventListener('DOMContentLoaded', () => {
             appWrapper.style.display = 'block';
             gsap.from('.app-wrapper', { duration: 0.7, y: -30, opacity: 0, ease: 'power3.out' });
             initAppForUser(currentUserId);
+            hideLoading(); // *** FIX: Hide loading on successful login or page refresh ***
         } else {
             // User is signed out.
-            currentUserId = null;
-            if (dbListener) {
+            if (dbListener && currentUserId) { // Check if listener and userId exist before detaching
                 db.ref('transactions/' + currentUserId).off('value', dbListener);
             }
+            currentUserId = null;
             allTransactions = [];
             updateUI(); // Clear UI
             appWrapper.style.display = 'none';
             authWrapper.style.display = 'block';
             showAuthPage('login-page');
-            hideLoading();
+            hideLoading(); // *** FIX: Also hide loading on logout ***
         }
     });
 
@@ -665,7 +667,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideLoading();
             });
     });
-
 
     // Handle Logout
     logoutBtn.addEventListener('click', () => {
