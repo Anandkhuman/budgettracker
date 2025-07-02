@@ -131,14 +131,17 @@
         .history-controls h3 { border-bottom: none; margin: 0 0 15px 0; }
         .controls-row {
             display: flex;
-            flex-wrap: wrap; /* Allows wrapping on smaller screens */
+            flex-wrap: nowrap; /* Keep items on one line */
             align-items: center;
             gap: 10px; /* Spacing between elements */
+            overflow-x: auto; /* Allow horizontal scrolling if needed */
+            padding-bottom: 5px; /* Add space for scrollbar */
         }
         .filter-container {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0; /* Prevent filter containers from shrinking */
         }
         .filter-container label {
             margin: 0;
@@ -150,13 +153,13 @@
             padding: 8px; 
             width: auto; 
             font-size: 14px;
-            flex-grow: 1; /* Allow inputs to grow */
         }
         .report-btn {
             cursor: pointer; background-color: var(--secondary-color); border: 0; color: #fff;
             display: block; font-size: 14px; padding: 8px 12px; border-radius: 8px;
             font-weight: 500; transition: background-color 0.3s ease;
             margin-left: auto; /* Pushes the button to the far right */
+            flex-shrink: 0; /* Prevent button from shrinking */
         }
         .report-btn:hover { background-color: var(--accent-color); }
 
@@ -231,8 +234,26 @@
         /* Responsive Media Queries */
         @media (max-width: 550px) {
             .app-wrapper { width: 100%; }
-            .container { border-radius: 0; min-height: calc(100vh - 80px); }
+            .container { border-radius: 0; min-height: calc(100vh - 80px); padding: 15px; }
             .nav { border-radius: 0; }
+            body { font-size: 14px; }
+
+            h1 { font-size: 1.5rem; }
+            h3 { font-size: 1.1rem; margin: 20px 0 10px; }
+            h4 { font-size: 0.9rem; }
+
+            #balance { font-size: 2.1rem; margin-bottom: 20px; }
+            .money { font-size: 1.3rem; }
+            
+            .summary-container { padding: 15px; margin: 15px 0; }
+
+            .btn, .nav-btn, input, select, textarea { font-size: 14px; }
+            
+            .list li { padding: 10px; }
+            .list li .details { font-size: 0.9rem; }
+
+            .overview-text .percentage { font-size: 2rem; }
+            .overview-text .label { font-size: 0.9rem; }
         }
     </style>
 </head>
