@@ -300,16 +300,16 @@
         
         <div id="tracker" class="page active container">
             <h4>Your Balance</h4>
-            <h1 id="balance">₹0.00</h1>
+            <h1 id="balance">Rs. 0.00</h1>
 
             <div class="summary-container">
                 <div>
                     <h4>Income</h4>
-                    <p id="money-plus" class="money plus">+₹0.00</p>
+                    <p id="money-plus" class="money plus">+Rs. 0.00</p>
                 </div>
                 <div>
                     <h4>Expense</h4>
-                    <p id="money-minus" class="money minus">-₹0.00</p>
+                    <p id="money-minus" class="money minus">-Rs. 0.00</p>
                 </div>
             </div>
             
@@ -740,7 +740,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currency: 'INR',
             minimumFractionDigits: 2,
         });
-        return sign + formatter.format(Math.abs(number)).replace(/^(\D+)/, '₹ ');
+        // Replace the Rupee symbol with 'Rs.' for PDF compatibility
+        return formatter.format(Math.abs(number)).replace('₹', `${sign}Rs. `).replace('.00', '');
     }
 
     function formatDateTime(isoString) {
