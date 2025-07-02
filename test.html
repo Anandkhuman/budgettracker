@@ -41,7 +41,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* Align to top */
+            padding-top: 20px;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -69,10 +70,7 @@
 
         /* Navigation */
         .nav {
-            display: flex;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
-            padding: 5px;
+            display: flex; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 5px;
         }
         .nav-btn {
             flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-color);
@@ -80,8 +78,7 @@
             border-radius: 12px; transition: background-color 0.3s ease;
         }
         .nav-btn.active {
-            background-color: var(--accent-color); color: #fff;
-            box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+            background-color: var(--accent-color); color: #fff; box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
         }
         
         .page { display: none; }
@@ -107,10 +104,13 @@
         h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 15px; font-weight: 600; }
         label { display: block; margin: 10px 0; font-weight: 400; }
         
-        input[type='text'], input[type='number'], select {
+        input[type='text'], input[type='number'], select, input[type='date'] {
             border: 1px solid var(--border-color); border-radius: 8px; display: block; font-size: 16px;
             padding: 12px; width: 100%; background: rgba(0, 0, 0, 0.2); color: var(--text-color);
             font-family: 'Poppins', sans-serif;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8); cursor: pointer;
         }
         select { cursor: pointer; }
 
@@ -125,19 +125,38 @@
 
         /* History Controls & Reports */
         .history-controls {
-            margin-top: 30px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            margin-top: 30px; border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px; margin-bottom: 15px;
         }
         .history-controls h3 { border-bottom: none; margin: 0 0 15px 0; }
-        .controls-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;}
-        .filter-container { display: flex; align-items: center; gap: 10px; }
-        .filter-container select { padding: 8px; width: auto; font-size: 14px;}
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap; /* Allows wrapping on smaller screens */
+            align-items: center;
+            gap: 10px; /* Spacing between elements */
+        }
+        .filter-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-container label {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 400;
+            white-space: nowrap; /* Prevent label from wrapping */
+        }
+        .filter-container select, .filter-container input[type="date"] {
+            padding: 8px; 
+            width: auto; 
+            font-size: 14px;
+            flex-grow: 1; /* Allow inputs to grow */
+        }
         .report-btn {
             cursor: pointer; background-color: var(--secondary-color); border: 0; color: #fff;
             display: block; font-size: 14px; padding: 8px 12px; border-radius: 8px;
             font-weight: 500; transition: background-color 0.3s ease;
+            margin-left: auto; /* Pushes the button to the far right */
         }
         .report-btn:hover { background-color: var(--accent-color); }
 
@@ -152,7 +171,7 @@
         .list li.plus { border-color: var(--income-color); }
         .list li.minus { border-color: var(--expense-color); }
         .list li .details { display: flex; flex-direction: column; flex-grow: 1; margin: 0 10px; }
-        .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; }
+        .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; margin-top: 4px; }
         .delete-btn {
             cursor: pointer; background-color: var(--accent-color); border: 0; color: #fff;
             font-size: 18px; line-height: 20px; padding: 5px 8px; border-radius: 5px;
@@ -175,18 +194,15 @@
         }
         .close-modal-btn {
             position: absolute; top: 10px; right: 15px; background: none; border: none;
-            color: var(--text-color); font-size: 2.5rem; line-height: 1;
-            cursor: pointer; opacity: 0.7; transition: opacity 0.3s;
+            color: var(--text-color); font-size: 2.5rem; line-height: 1; cursor: pointer;
+            opacity: 0.7; transition: opacity 0.3s;
         }
         .close-modal-btn:hover { opacity: 1; }
-
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
-        /* Form Inside Modal */
         #form .btn { margin-top: 20px; margin-bottom: 0; }
 
-        /* Transaction Type Toggle Switch */
+        /* Animated Toggle Switch */
         .type-toggle { margin: 25px 0; }
         .toggle-switch { position: relative; display: block; width: 100%; cursor: pointer; }
         .toggle-switch input { display: none; }
@@ -212,6 +228,7 @@
         .overview-text .percentage { font-size: 2.5rem; font-weight: 700; }
         .overview-text .label { font-size: 1rem; color: #aaa; }
         
+        /* Responsive Media Queries */
         @media (max-width: 550px) {
             .app-wrapper { width: 100%; }
             .container { border-radius: 0; min-height: calc(100vh - 80px); }
@@ -231,16 +248,16 @@
         
         <div id="tracker" class="page active container">
             <h4>Your Balance</h4>
-            <h1 id="balance">$0.00</h1>
+            <h1 id="balance">₹0.00</h1>
 
             <div class="summary-container">
                 <div>
                     <h4>Income</h4>
-                    <p id="money-plus" class="money plus">+$0.00</p>
+                    <p id="money-plus" class="money plus">+₹0.00</p>
                 </div>
                 <div>
                     <h4>Expense</h4>
-                    <p id="money-minus" class="money minus">-$0.00</p>
+                    <p id="money-minus" class="money minus">-₹0.00</p>
                 </div>
             </div>
             
@@ -250,20 +267,25 @@
                 <h3>History</h3>
                 <div class="controls-row">
                     <div class="filter-container">
-                        <label for="filter-transactions">Filter:</label>
+                        <label for="filter-transactions">Show:</label>
                         <select id="filter-transactions">
                             <option value="all">All</option>
                             <option value="income">Income</option>
                             <option value="expense">Expense</option>
                         </select>
                     </div>
-                    <div class="report-container">
-                         <button id="download-report-btn" class="report-btn">Download Report</button>
+                    <div class="filter-container">
+                        <label for="start-date">From:</label>
+                        <input type="date" id="start-date">
                     </div>
+                    <div class="filter-container">
+                        <label for="end-date">To:</label>
+                        <input type="date" id="end-date">
+                    </div>
+                    <button id="download-report-btn" class="report-btn">Report</button>
                 </div>
             </div>
             <ul id="list" class="list"></ul>
-
         </div>
 
         <div id="dashboard" class="page container">
@@ -343,7 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3D BACKGROUND ---
     function initThree() {
-        // ... (existing 3D background code is unchanged and works fine)
         const canvas = document.getElementById('three-canvas');
         if (!canvas) return;
         const scene = new THREE.Scene();
@@ -386,12 +407,13 @@ document.addEventListener('DOMContentLoaded', () => {
           transactionType = document.getElementById('transaction-type'),
           navButtons = document.querySelectorAll('.nav-btn'),
           pages = document.querySelectorAll('.page'),
-          // New Elements
           openAddTransactionBtn = document.getElementById('open-add-transaction-btn'),
           addTransactionModal = document.getElementById('add-transaction-modal'),
           closeModalBtn = document.querySelector('.close-modal-btn'),
           filterControl = document.getElementById('filter-transactions'),
-          downloadReportBtn = document.getElementById('download-report-btn');
+          downloadReportBtn = document.getElementById('download-report-btn'),
+          startDateInput = document.getElementById('start-date'),
+          endDateInput = document.getElementById('end-date');
     
     const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
     const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
@@ -400,7 +422,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let categoryChartInstance = null;
 
     // --- CORE LOGIC ---
-
     function addTransaction(e) {
         e.preventDefault();
         const enteredAmount = +amount.value;
@@ -412,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const transaction = {
             id: Date.now(),
-            date: new Date().toLocaleDateString(), // Add date for reports
+            date: new Date().toISOString(),
             text: text.value,
             amount: transactionType.checked ? enteredAmount : -enteredAmount,
             category: category.value
@@ -421,7 +442,6 @@ document.addEventListener('DOMContentLoaded', () => {
         transactions.push(transaction);
         updateUI();
         
-        // Clear form and close modal
         text.value = '';
         amount.value = '';
         transactionType.checked = false;
@@ -434,15 +454,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     }
 
+    function getFilteredTransactions() {
+        const filterValue = filterControl.value;
+        const startDateValue = startDateInput.value;
+        const endDateValue = endDateInput.value;
+
+        let startDate = startDateValue ? new Date(startDateValue) : null;
+        let endDate = endDateValue ? new Date(endDateValue) : null;
+
+        if (startDate) startDate.setHours(0, 0, 0, 0);
+        if (endDate) endDate.setHours(23, 59, 59, 999);
+
+        return transactions.filter(t => {
+            const transactionDate = new Date(t.date);
+            const typeMatch = (filterValue === 'all') || 
+                              (filterValue === 'income' && t.amount > 0) || 
+                              (filterValue === 'expense' && t.amount < 0);
+            
+            const startDateMatch = !startDate || transactionDate >= startDate;
+            const endDateMatch = !endDate || transactionDate <= endDate;
+            
+            return typeMatch && startDateMatch && endDateMatch;
+        });
+    }
+
     function renderTransactionList() {
         list.innerHTML = '';
-        const filterValue = filterControl.value;
+        const filteredTransactions = getFilteredTransactions();
         
-        const filteredTransactions = transactions.filter(t => {
-            if (filterValue === 'income') return t.amount > 0;
-            if (filterValue === 'expense') return t.amount < 0;
-            return true; // 'all'
-        }).sort((a, b) => b.id - a.id); // Show newest first
+        filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         filteredTransactions.forEach(transaction => {
             const sign = transaction.amount < 0 ? '-' : '+';
@@ -452,7 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="delete-btn" data-id="${transaction.id}">x</button>
                 <div class="details">
                     ${transaction.text}
-                    <span class="category">${transaction.category} • ${transaction.date}</span>
+                    <span class="category">${transaction.category} • ${formatDateTime(transaction.date)}</span>
                 </div>
                 <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
             `;
@@ -494,60 +534,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const doc = new jsPDF();
         
-        // 1. Title
+        const dataToReport = getFilteredTransactions();
+        const filterType = filterControl.options[filterControl.selectedIndex].text;
+        const startDate = startDateInput.value || 'Start';
+        const endDate = endDateInput.value || 'End';
+
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(20);
         doc.text('Budget Transaction Report', 105, 20, { align: 'center' });
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`Report Generated: ${new Date().toLocaleString()}`, 105, 25, { align: 'center' });
+        doc.text(`Filters Applied: ${filterType} transactions from ${startDate} to ${endDate}`, 105, 30, { align: 'center' });
 
-        // 2. Summary
-        const amounts = transactions.map(t => t.amount);
+        const amounts = dataToReport.map(t => t.amount);
         const total = amounts.reduce((acc, item) => acc + item, 0);
         const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
         const expense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0));
         
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('Summary', 14, 40);
+        doc.text('Filtered Summary', 14, 45);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Total Balance: ${formatMoney(total)}`, 14, 48);
-        doc.text(`Total Income: +${formatMoney(income)}`, 14, 54);
-        doc.text(`Total Expense: -${formatMoney(expense)}`, 14, 60);
+        doc.text(`Total of Filtered Items: ${formatMoney(total)}`, 14, 53);
+        doc.text(`Filtered Income: +${formatMoney(income)}`, 14, 59);
+        doc.text(`Filtered Expense: -${formatMoney(expense)}`, 14, 65);
         
-        // 3. Table using autoTable
-        const tableColumn = ["Date", "Description", "Category", "Amount"];
+        const tableColumn = ["Date & Time", "Description", "Category", "Amount (INR)"];
         const tableRows = [];
 
-        transactions.sort((a,b) => a.id - b.id).forEach(t => { // Sort by oldest first for report
-            const transactionData = [
-                t.date,
+        dataToReport.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+            tableRows.push([
+                formatDateTime(t.date),
                 t.text,
                 t.category,
                 formatMoney(t.amount)
-            ];
-            tableRows.push(transactionData);
+            ]);
         });
 
         doc.autoTable({
             head: [tableColumn],
             body: tableRows,
-            startY: 70,
+            startY: 75,
             theme: 'grid',
-            headStyles: { fillColor: [15, 52, 96] }, // --secondary-color
+            headStyles: { fillColor: [15, 52, 96] },
             didParseCell: function (data) {
                 if (data.section === 'body' && data.column.index === 3) {
-                    if (data.cell.raw.includes('-')) {
-                        data.cell.styles.textColor = [192, 57, 43]; // --expense-color
+                    if (data.cell.raw.startsWith('-')) {
+                        data.cell.styles.textColor = [192, 57, 43];
                     } else {
-                        data.cell.styles.textColor = [46, 204, 113]; // --income-color
+                        data.cell.styles.textColor = [46, 204, 113];
                     }
                 }
             }
         });
-
-        // 4. Save
+        
         const date = new Date().toISOString().slice(0, 10);
         doc.save(`budget-report-${date}.pdf`);
     }
@@ -559,7 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBudgetOverview(totalIncome, totalExpense);
         renderCategoryChart();
     }
-    // ... other dashboard functions (renderBudgetOverview, renderCategoryChart) are unchanged ...
+    
     function renderBudgetOverview(income, expense) {
         const percentageElem = document.getElementById('budget-percentage');
         const progressCircle = document.getElementById('progress-circle');
@@ -577,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
             onUpdate: () => { percentageElem.innerText = `${animatedValue.val.toFixed(0)}%`; }
         });
     }
+
     function renderCategoryChart() {
         if (categoryChartInstance) categoryChartInstance.destroy();
         const expenseTransactions = transactions.filter(t => t.amount < 0);
@@ -610,7 +652,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- HELPERS & UI BINDING ---
     function formatMoney(number) {
         const sign = number < 0 ? "-" : "";
-        return sign + '$' + Math.abs(number).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        const formatter = new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            minimumFractionDigits: 2,
+        });
+        return sign + formatter.format(Math.abs(number)).replace(/^(\D+)/, '₹');
+    }
+
+    function formatDateTime(isoString) {
+        const date = new Date(isoString);
+        const options = {
+            year: 'numeric', month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: 'numeric', hour12: true
+        };
+        return date.toLocaleString('en-IN', options);
     }
 
     function updateToggleUI() {
@@ -648,11 +704,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- INITIALIZATION & NEW EVENT LISTENERS ---
+    // --- INITIALIZATION & EVENT LISTENERS ---
     form.addEventListener('submit', addTransaction);
     transactionType.addEventListener('change', updateToggleUI);
     
-    // Modal Listeners
     openAddTransactionBtn.addEventListener('click', () => addTransactionModal.classList.add('show'));
     closeModalBtn.addEventListener('click', () => addTransactionModal.classList.remove('show'));
     window.addEventListener('click', e => {
@@ -661,8 +716,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Filter & Report Listeners
     filterControl.addEventListener('change', renderTransactionList);
+    startDateInput.addEventListener('change', renderTransactionList);
+    endDateInput.addEventListener('change', renderTransactionList);
     downloadReportBtn.addEventListener('click', generatePDF);
     
     gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
