@@ -584,20 +584,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- PDF REPORT GENERATION (WITH 5-SECOND ANIMATION) ---
+    // --- PDF REPORT GENERATION (FIXED & ROBUST) ---
     function generatePDF() {
-        // 1. Show the loading overlay immediately
+        // ROBUSTNESS CHECK: Ensure both jsPDF and the autoTable plugin are loaded.
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+            alert('Error: PDF library (jsPDF) not loaded. Please check your internet connection and try again.');
+            return;
+        }
+        if (typeof window.jspdf.jsPDF.API.autoTable === 'undefined') {
+            alert('Error: PDF Table plugin (autoTable) not loaded. Please check your internet connection and try again.');
+            return;
+        }
+        
+        // 1. Show the loading overlay
         loadingOverlay.style.display = 'flex';
         
         // 2. Set a 5-second timeout to simulate generation
         setTimeout(() => {
             try {
                 const { jsPDF } = window.jspdf;
-                if (!jsPDF) {
-                    alert('PDF library not loaded. Please try again.');
-                    // The 'finally' block will still hide the overlay
-                    return; 
-                }
                 const doc = new jsPDF();
                 
                 const dataToReport = getFilteredTransactions();
@@ -674,7 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch(error) {
                 console.error("Failed to generate PDF:", error);
-                alert("Sorry, there was an error generating the report.");
+                alert("Sorry, there was an unexpected error while generating the report.");
             } finally {
                 // 3. Hide the loading overlay after the process is complete (or fails)
                 loadingOverlay.style.display = 'none';
