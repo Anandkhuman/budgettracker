@@ -181,7 +181,7 @@
         }
         .list li.plus { border-color: var(--income-color); }
         .list li.minus { border-color: var(--expense-color); }
-        .list li .details { display: flex; flex-direction: column; }
+        .list li .details { display: flex; flex-direction: column; flex-grow: 1; margin: 0 10px; }
         .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; }
         .delete-btn {
             cursor: pointer; background-color: var(--accent-color); border: 0; color: #fff;
@@ -226,7 +226,6 @@
         </nav>
         
         <div id="tracker" class="page active container">
-            <!-- Tracker Content -->
             <h4>Your Balance</h4>
             <h1 id="balance">$0.00</h1>
 
@@ -249,7 +248,7 @@
                 <div class="type-toggle">
                     <label>Transaction Type</label>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="transaction-type"> <!-- Unchecked: Debit, Checked: Credit -->
+                        <input type="checkbox" id="transaction-type">
                         <div class="switch-body">
                             <div class="thumb"></div>
                             <div class="toggle-label debit">Debit</div>
@@ -257,7 +256,6 @@
                         </div>
                     </label>
                 </div>
-
                 <div class="form-control">
                     <label for="text">Description</label>
                     <input type="text" id="text" placeholder="e.g., Groceries" autocomplete="off"/>
@@ -283,7 +281,6 @@
         </div>
 
         <div id="dashboard" class="page container">
-            <!-- Dashboard Content -->
             <h1>Dashboard</h1>
             <div class="dashboard-grid">
                 <div class="chart-container">
@@ -316,247 +313,175 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- THREE.JS BACKGROUND ---
-    let scene, camera, renderer, particles;
+    // --- 3D BACKGROUND (No errors here) ---
     function initThree() {
         const canvas = document.getElementById('three-canvas');
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+        if (!canvas) return;
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         const particleCount = 5000;
         const positions = new Float32Array(particleCount * 3);
-        for(let i = 0; i < particleCount * 3; i++) {
-            positions[i] = (Math.random() - 0.5) * 20;
-        }
+        for(let i = 0; i < particleCount * 3; i++) positions[i] = (Math.random() - 0.5) * 20;
         const particleGeometry = new THREE.BufferGeometry();
         particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         const particleMaterial = new THREE.PointsMaterial({ color: 0x0f3460, size: 0.03, transparent: true, blending: THREE.AdditiveBlending });
-        particles = new THREE.Points(particleGeometry, particleMaterial);
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
         scene.add(particles);
         camera.position.z = 5;
-        animateThree();
+        const animate = () => {
+            requestAnimationFrame(animate);
+            particles.rotation.x += 0.0001;
+            particles.rotation.y += 0.0002;
+            renderer.render(scene, camera);
+        };
+        animate();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
     }
-    function animateThree() {
-        requestAnimationFrame(animateThree);
-        particles.rotation.x += 0.0001;
-        particles.rotation.y += 0.0002;
-        renderer.render(scene, camera);
-    }
-    function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-    window.addEventListener('resize', onWindowResize, false);
     initThree();
 
-    // --- GSAP PAGE LOAD ANIMATION ---
-    gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
-    gsap.from('#tracker.active > *', { duration: 0.8, y: 30, opacity: 0, stagger: 0.1, delay: 0.5 });
-
     // --- DOM ELEMENTS & APP STATE ---
-    const balance = document.getElementById('balance');
-    const money_plus = document.getElementById('money-plus');
-    const money_minus = document.getElementById('money-minus');
-    const list = document.getElementById('list');
-    const form = document.getElementById('form');
-    const text = document.getElementById('text');
-    const amount = document.getElementById('amount');
-    const category = document.getElementById('category');
-    const transactionType = document.getElementById('transaction-type');
+    const balance = document.getElementById('balance'),
+          money_plus = document.getElementById('money-plus'),
+          money_minus = document.getElementById('money-minus'),
+          list = document.getElementById('list'),
+          form = document.getElementById('form'),
+          text = document.getElementById('text'),
+          amount = document.getElementById('amount'),
+          category = document.getElementById('category'),
+          transactionType = document.getElementById('transaction-type'),
+          navButtons = document.querySelectorAll('.nav-btn'),
+          pages = document.querySelectorAll('.page');
     
-    const navButtons = document.querySelectorAll('.nav-btn');
-    const pages = document.querySelectorAll('.page');
-
-    // **FIX**: Get computed styles for Chart.js, as it can't parse CSS variables
     const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
     const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
 
-    const localStorageTransactions = JSON.parse(localStorage.getItem('transactions'));
-    let transactions = localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
+    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
     let categoryChartInstance = null;
-    
-    // --- NAVIGATION LOGIC ---
-    navButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const pageId = btn.dataset.page;
-            navButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            pages.forEach(p => {
-                if (p.id === pageId) {
-                    p.classList.add('active');
-                    // Animate new page content
-                    gsap.from(`#${pageId}.active > *`, { duration: 0.5, y: 30, opacity: 0, stagger: 0.1 });
-                } else {
-                    p.classList.remove('active');
-                }
-            });
-            
-            if(pageId === 'dashboard') {
-                renderDashboard();
-            }
-        });
-    });
 
-    // --- DYNAMIC UI UPDATE FOR TOGGLE SWITCH ---
-    function updateToggleUI() {
-        if (transactionType.checked) { // Credit (Income)
-            amount.placeholder = "Enter income amount...";
-            category.value = "Salary";
-        } else { // Debit (Expense)
-            amount.placeholder = "Enter expense amount...";
-            category.value = "Groceries";
-        }
-    }
-    transactionType.addEventListener('change', updateToggleUI);
+    // --- CORE LOGIC ---
 
-
-    // --- TRANSACTION LOGIC ---
     function addTransaction(e) {
         e.preventDefault();
         const enteredAmount = +amount.value;
-
         if (text.value.trim() === '' || amount.value.trim() === '' || enteredAmount <= 0) {
-            gsap.from(form, {x: -10, duration: 0.5, ease: "elastic.out(1, 0.3)"});
+            gsap.from(form, { x: -10, duration: 0.5, ease: "elastic.out(1, 0.3)" });
             alert('Please add a description and a valid positive amount.');
             return;
         }
         
-        const finalAmount = transactionType.checked ? enteredAmount : -enteredAmount;
-
         const transaction = {
-            id: generateID(),
+            id: Date.now(),
             text: text.value,
-            amount: finalAmount,
+            amount: transactionType.checked ? enteredAmount : -enteredAmount,
             category: category.value
         };
 
         transactions.push(transaction);
-        addTransactionDOM(transaction);
-        updateValues();
-        updateLocalStorage();
-
+        updateUI();
+        
+        // Clear form
         text.value = '';
         amount.value = '';
         transactionType.checked = false;
         updateToggleUI();
     }
 
-    function generateID() { return Math.floor(Math.random() * 100000000); }
-
-    function addTransactionDOM(transaction) {
-        const sign = transaction.amount < 0 ? '-' : '+';
-        const item = document.createElement('li');
-        item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
-        
-        // **FIX**: Pass 'event' to the removeTransaction function
-        item.innerHTML = `
-            <div class="details">
-                ${transaction.text}
-                <span class="category">${transaction.category}</span>
-            </div>
-            <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
-            <button class="delete-btn" onclick="removeTransaction(event, ${transaction.id})">x</button>
-        `;
-        list.appendChild(item);
-        
-        gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
+    function removeTransaction(id) {
+        transactions = transactions.filter(t => t.id !== id);
+        updateUI();
     }
 
-    function updateValues() {
-        const amounts = transactions.map(t => t.amount);
-        const total = amounts.reduce((acc, item) => (acc += item), 0);
-        const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
-        const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1);
+    function renderTransactionList() {
+        list.innerHTML = '';
+        transactions.forEach(transaction => {
+            const sign = transaction.amount < 0 ? '-' : '+';
+            const item = document.createElement('li');
+            item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
+            item.innerHTML = `
+                <button class="delete-btn" data-id="${transaction.id}">x</button>
+                <div class="details">
+                    ${transaction.text}
+                    <span class="category">${transaction.category}</span>
+                </div>
+                <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
+            `;
+            list.appendChild(item);
+            gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
+        });
+    }
 
+    function updateSummary() {
+        const amounts = transactions.map(t => t.amount);
+        const total = amounts.reduce((acc, item) => acc + item, 0);
+        const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
+        const expense = (amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0)) * -1;
+        
         balance.innerText = formatMoney(total);
         money_plus.innerText = `+${formatMoney(income)}`;
         money_minus.innerText = `-${formatMoney(expense)}`;
-    }
-    
-    function formatMoney(number) {
-        return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-    }
-
-    // **FIX**: Accept 'event' as the first parameter
-    window.removeTransaction = function(event, id) {
-        const transactionEl = event.target.parentElement;
-        gsap.to(transactionEl, { 
-            duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
-            onComplete: () => {
-                transactions = transactions.filter(t => t.id !== id);
-                updateLocalStorage();
-                initTrackerPage();
-            }
-        });
     }
 
     function updateLocalStorage() {
         localStorage.setItem('transactions', JSON.stringify(transactions));
     }
-    
-    function initTrackerPage() {
-        list.innerHTML = '';
-        transactions.forEach(addTransactionDOM);
-        updateValues();
-        updateToggleUI(); 
-    }
-    
-    // --- DASHBOARD LOGIC ---
-    function renderDashboard() {
-        const amounts = transactions.map(t => t.amount);
-        const totalIncome = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0);
-        const totalExpense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0));
 
+    function updateUI() {
+        updateSummary();
+        renderTransactionList();
+        updateLocalStorage();
+        if (document.querySelector('#dashboard.active')) {
+            renderDashboard();
+        }
+    }
+
+    // --- DASHBOARD ---
+
+    function renderDashboard() {
+        const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
+        const totalExpense = Math.abs(transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0));
         renderBudgetOverview(totalIncome, totalExpense);
         renderCategoryChart();
     }
-    
+
     function renderBudgetOverview(income, expense) {
         const percentageElem = document.getElementById('budget-percentage');
         const progressCircle = document.getElementById('progress-circle');
         const radius = progressCircle.r.baseVal.value;
         const circumference = 2 * Math.PI * radius;
-        
-        let percentage = 0;
-        if (income > 0) percentage = Math.min((expense / income) * 100, 100);
-        
+        let percentage = (income > 0) ? Math.min((expense / income) * 100, 100) : 0;
         const offset = circumference - (percentage / 100) * circumference;
         
-        progressCircle.style.strokeDasharray = circumference;
-        
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
         gsap.to(progressCircle, { strokeDashoffset: offset, duration: 1.5, ease: 'power3.out' });
 
-        let animatedValue = { val: parseFloat(percentageElem.innerText) || 0 };
+        let animatedValue = { val: parseFloat(percentageElem.innerText.replace('%', '')) || 0 };
         gsap.to(animatedValue, {
             val: percentage, duration: 1.5, ease: 'power3.out',
-            onUpdate: () => {
-                percentageElem.innerText = `${animatedValue.val.toFixed(0)}%`;
-            }
+            onUpdate: () => { percentageElem.innerText = `${animatedValue.val.toFixed(0)}%`; }
         });
     }
 
     function renderCategoryChart() {
-        if(categoryChartInstance) categoryChartInstance.destroy();
-
+        if (categoryChartInstance) categoryChartInstance.destroy();
         const expenseTransactions = transactions.filter(t => t.amount < 0);
         const spendingByCategory = expenseTransactions.reduce((acc, t) => {
             acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
             return acc;
         }, {});
-
-        const labels = Object.keys(spendingByCategory);
-        const data = Object.values(spendingByCategory);
-
+        
         const ctx = document.getElementById('category-chart').getContext('2d');
         categoryChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: Object.keys(spendingByCategory),
                 datasets: [{
-                    label: 'Spending', data: data,
+                    label: 'Spending', data: Object.values(spendingByCategory),
                     backgroundColor: ['rgba(233, 69, 96, 0.7)', 'rgba(22, 33, 62, 0.7)', 'rgba(15, 52, 96, 0.7)', 'rgba(46, 204, 113, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)', 'rgba(241, 196, 15, 0.7)'],
                     borderColor: chartBorderColor, borderWidth: 1, borderRadius: 5,
                 }]
@@ -565,7 +490,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 responsive: true, maintainAspectRatio: true,
                 plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => formatMoney(context.raw) } } },
                 scales: {
-                    // **FIX**: Use JS variables for colors
                     y: { beginAtZero: true, ticks: { color: chartTextColor, font: { family: "'Poppins', sans-serif" } }, grid: { color: chartBorderColor } },
                     x: { ticks: { color: chartTextColor, font: { family: "'Poppins', sans-serif" } }, grid: { color: 'transparent' } }
                 }
@@ -573,9 +497,58 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- HELPERS & UI BINDING ---
+    function formatMoney(number) {
+        return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+    function updateToggleUI() {
+        if (transactionType.checked) {
+            amount.placeholder = "Enter income amount...";
+            category.value = "Salary";
+        } else {
+            amount.placeholder = "Enter expense amount...";
+            category.value = "Groceries";
+        }
+    }
+
+    // *** THE FIX: Using Event Delegation for Deletes ***
+    list.addEventListener('click', event => {
+        if (event.target.classList.contains('delete-btn')) {
+            const id = parseInt(event.target.dataset.id);
+            const itemToRemove = event.target.closest('li');
+            
+            gsap.to(itemToRemove, {
+                duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
+                onComplete: () => {
+                    removeTransaction(id);
+                }
+            });
+        }
+    });
+
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pageId = btn.dataset.page;
+            navButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            pages.forEach(p => p.classList.toggle('active', p.id === pageId));
+            
+            if (pageId === 'dashboard') {
+                gsap.from('#dashboard.active > *', { duration: 0.5, y: 30, opacity: 0, stagger: 0.1 });
+                renderDashboard();
+            }
+        });
+    });
+
     // --- INITIALIZATION ---
-    initTrackerPage();
     form.addEventListener('submit', addTransaction);
+    transactionType.addEventListener('change', updateToggleUI);
+    
+    gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
+    updateUI(); // Initial render
+    updateToggleUI(); // Set initial placeholder
 });
 </script>
 
