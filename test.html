@@ -676,10 +676,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     },
                     didDrawPage: function (data) {
-                        // --- PDF Footer on each page ---
+                        // --- PDF Footer on each page (THIS IS THE FIX) ---
                         const pageCount = doc.internal.getNumberOfPages();
                         doc.setFontSize(10);
-                        doc.text('Page ' + doc.internal.getPageInfo().pageNumber + ' of ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                        // Use 'data.pageNumber' provided by autoTable
+                        doc.text('Page ' + data.pageNumber + ' of ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 10);
                     }
                 });
                 
@@ -696,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Ensure loader is hidden on error too
                 loadingOverlay.style.display = 'none';
             }
-        }, 250); // A 250ms delay is enough for the UI to update.
+        }, 250); 
     }
 
 
