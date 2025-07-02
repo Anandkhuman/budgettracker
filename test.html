@@ -599,13 +599,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Show the loading overlay
         loadingOverlay.style.display = 'flex';
         
-        // 2. Set a 5-second timeout to simulate generation
+        // 2. Set a timeout to allow the loading spinner to render and simulate generation
         setTimeout(() => {
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
                 const dataToReport = getFilteredTransactions();
+                if (dataToReport.length === 0) {
+                    alert('No transactions to report for the selected filters.');
+                    // The 'finally' block will still hide the loader
+                    return;
+                }
+
                 const filterType = filterControl.options[filterControl.selectedIndex].text;
                 const startDate = startDateInput.value || 'Start';
                 const endDate = endDateInput.value || 'End';
@@ -655,19 +661,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: tableRows,
                     startY: doc.lastAutoTable.finalY + 10,
                     theme: 'striped',
-                    headStyles: { fillColor: [22, 33, 62] },
+                    headStyles: { fillColor: [22, 33, 62] }, // Dark blue header
                     didParseCell: function (data) {
+                        // Color code amounts in the table
                         if (data.section === 'body' && data.column.index === 3) {
-                            if (data.cell.raw.content.startsWith('-')) {
-                                data.cell.styles.textColor = [192, 57, 43];
+                            if (data.cell.raw.content.includes('-')) {
+                                data.cell.styles.textColor = [192, 57, 43]; // Expense red
                             } else {
-                                data.cell.styles.textColor = [46, 204, 113];
+                                data.cell.styles.textColor = [46, 204, 113]; // Income green
                             }
                             data.cell.styles.fontStyle = 'bold';
                         }
                     },
                     didDrawPage: function (data) {
-                        // --- PDF Footer ---
+                        // --- PDF Footer on each page ---
                         const pageCount = doc.internal.getNumberOfPages();
                         doc.setFontSize(10);
                         doc.text('Page ' + doc.internal.getPageInfo().pageNumber + ' of ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 10);
@@ -679,13 +686,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch(error) {
                 console.error("Failed to generate PDF:", error);
-                alert("Sorry, there was an unexpected error while generating the report.");
+                alert("Sorry, there was an unexpected error while generating the report. Please check the console for details.");
             } finally {
                 // 3. Hide the loading overlay after the process is complete (or fails)
                 loadingOverlay.style.display = 'none';
             }
-        }, 5000); // 5000 milliseconds = 5 seconds
+        }, 500); // 500ms delay to ensure spinner is shown
     }
+
 
     // --- DASHBOARD ---
     function renderDashboard() {
