@@ -2,33 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="view<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AuraBudget - Real-Time Budget Tracker</title>
+    <title>Dashboard Budget Tracker</title>
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Font Awesome CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
     <!-- CDN for Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
 
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root {
@@ -52,122 +49,81 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Center vertically for auth pages */
+            justify-content: center;
+            padding: 20px 0;
             min-height: 100vh;
             overflow-x: hidden;
         }
 
-        #three-canvas { position: fixed; top: 0; left: 0; z-index: -1; }
+        #three-canvas {
+            position: fixed; top: 0; left: 0; z-index: -1;
+        }
         
-        /* Universal Display Control */
-        .auth-page, .app-wrapper { display: none; }
-        .visible { display: block; }
-        .flex-visible { display: flex; }
+        /* General Wrappers */
+        .auth-wrapper, .app-wrapper {
+             width: 95%; max-width: 500px; z-index: 1;
+        }
+        .app-wrapper { display: none; /* Hidden by default */ }
 
-        /* --- Home Page Styles --- */
-        #home-page {
-            text-align: center;
-            width: 90%;
-            max-width: 600px;
-            z-index: 2;
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            margin-top: 15px;
         }
-        #home-page img {
-            width: 100%;
-            max-width: 400px;
-            margin-bottom: 20px;
-        }
-        #home-page h1 {
-            font-size: 2.8rem;
-            color: #fff;
-            margin-bottom: 10px;
-        }
-        #home-page p {
-            font-size: 1.2rem;
-            color: var(--text-color);
-            margin-bottom: 30px;
-        }
-        #home-page .btn {
-            max-width: 250px;
-            margin: 0 auto;
-        }
-
-        /* --- Auth Pages Styles --- */
-        .auth-container {
-            width: 95%;
-            max-width: 400px;
-            z-index: 1;
-        }
-        .auth-container .container {
-             background: var(--glass-bg);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px; border: 1px solid var(--border-color);
-            padding: 30px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-        }
-        .auth-container h2 {
-            text-align: center;
-            margin-bottom: 25px;
-            color: #fff;
-        }
-        .input-group {
-            position: relative;
-            margin-bottom: 20px;
-        }
-        .input-group i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-color);
-            opacity: 0.5;
-        }
-        .input-group input {
-            padding-left: 45px !important; /* Make space for icon */
-        }
+        
+        /* Auth Page Styles */
+        .auth-page { display: none; }
+        .auth-page.active { display: block; }
+        .auth-page h1 { margin-bottom: 25px; }
+        .auth-page .form-control { margin-bottom: 15px; }
         .auth-link {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: var(--text-color);
-            text-decoration: none;
-            font-weight: 600;
+            display: block; text-align: center; margin-top: 20px;
+            color: var(--text-color); text-decoration: none;
+            opacity: 0.8; transition: opacity 0.3s;
         }
-        .auth-link:hover {
-            color: var(--accent-color);
-        }
+        .auth-link:hover { opacity: 1; }
         .auth-error {
-            color: var(--accent-color);
-            background: rgba(233, 69, 96, 0.1);
-            border: 1px solid var(--accent-color);
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 14px;
+            color: var(--accent-color); background: rgba(233, 69, 96, 0.1);
+            padding: 10px; border-radius: 8px; font-size: 14px;
+            text-align: center; margin-bottom: 15px; border: 1px solid var(--accent-color);
             display: none; /* Hidden by default */
         }
-        /* --- End Auth Styles --- */
-
-        .app-wrapper { width: 95%; max-width: 500px; z-index: 1; }
-        .container { padding: 25px; margin-top: 15px; }
+        .auth-success {
+            color: var(--income-color); background: rgba(46, 204, 113, 0.1);
+            padding: 10px; border-radius: 8px; font-size: 14px;
+            text-align: center; margin-bottom: 15px; border: 1px solid var(--income-color);
+            display: none; /* Hidden by default */
+        }
 
         /* Navigation */
-        .nav { display: flex; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 5px; }
+        .nav {
+            display: flex; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 5px; gap: 5px;
+        }
         .nav-btn {
             flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-color);
             font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 600; cursor: pointer;
             border-radius: 12px; transition: background-color 0.3s ease;
         }
-        .nav-btn.active, #logout-btn:hover {
+        .nav-btn.active {
             background-color: var(--accent-color); color: #fff; box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
         }
-        #logout-btn { flex: 0; padding: 10px 15px; }
+        .logout-btn {
+            background-color: var(--secondary-color);
+        }
         
         .page { display: none; }
         .page.active { display: block; }
         
-        h1, h2, h3, h4 { letter-spacing: 1px; }
+        h1, h3, h4 { letter-spacing: 1px; }
         h1 { margin: 0 0 10px; text-align: center; font-weight: 700; color: #fff; }
         h4 { margin: 0; text-transform: uppercase; font-weight: 600; }
+
+        /* Tracker Page Styles */
         #balance { font-size: 2.5rem; letter-spacing: 1px; font-weight: 700; text-align: center; margin-bottom: 25px; }
 
         .summary-container {
@@ -183,12 +139,14 @@
         h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 15px; font-weight: 600; }
         label { display: block; margin: 10px 0; font-weight: 400; }
         
-        input[type='text'], input[type='email'], input[type='password'], input[type='number'], select, input[type='date'] {
+        input[type='text'], input[type='number'], input[type='email'], input[type='password'], select, input[type='date'] {
             border: 1px solid var(--border-color); border-radius: 8px; display: block; font-size: 16px;
             padding: 12px; width: 100%; background: rgba(0, 0, 0, 0.2); color: var(--text-color);
             font-family: 'Poppins', sans-serif;
         }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); cursor: pointer; }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8); cursor: pointer;
+        }
         select { cursor: pointer; }
 
         .btn {
@@ -196,15 +154,18 @@
             border: 0; color: #fff; display: block; font-size: 16px; margin: 20px 0;
             padding: 12px; width: 100%; border-radius: 8px; font-weight: 600;
             transition: background-color 0.3s ease, transform 0.2s ease;
+            display: inline-flex; justify-content: center; align-items: center; gap: 8px;
         }
         .btn:hover { background-color: #d63031; transform: scale(1.02); }
         .btn:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-color); }
 
+        /* History Controls & Reports */
         .history-controls {
             margin-top: 30px; border-bottom: 1px solid var(--border-color);
             padding-bottom: 15px; margin-bottom: 15px;
         }
         .history-controls h3 { border-bottom: none; margin: 0 0 15px 0; }
+        
         .filter-controls-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .filter-container { flex: 1; display: flex; flex-direction: column; gap: 5px; }
         .filter-container label { margin: 0; font-size: 14px; font-weight: 400; white-space: nowrap; }
@@ -213,6 +174,7 @@
             cursor: pointer; background-color: var(--secondary-color); border: 0; color: #fff;
             display: block; font-size: 16px; padding: 12px; border-radius: 8px;
             width: 100%; margin-top: 10px; font-weight: 600; transition: background-color 0.3s ease;
+            display: inline-flex; justify-content: center; align-items: center; gap: 8px;
         }
         .report-btn:hover { background-color: var(--accent-color); }
 
@@ -230,7 +192,7 @@
         .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; margin-top: 4px; }
         .delete-btn {
             cursor: pointer; background-color: var(--accent-color); border: 0; color: #fff;
-            font-size: 18px; line-height: 20px; padding: 5px 8px; border-radius: 5px;
+            font-size: 16px; line-height: 20px; padding: 5px 8px; border-radius: 5px;
             position: absolute; top: 50%; left: 0; transform: translate(-100%, -50%);
             opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
         }
@@ -285,40 +247,43 @@
         .overview-text .label { font-size: 1rem; color: #aaa; }
         
         /* --- Loading Animation --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        .loading-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
             background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
-            display: none; /* Changed from 'none' to a class-based system */
-            justify-content: center; align-items: center;
-            flex-direction: column; gap: 20px; z-index: 2000;
-            color: var(--text-color);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: none; /* Hidden by default */
+            justify-content: center; align-items: center; flex-direction: column;
+            gap: 20px; z-index: 2000; color: var(--text-color);
         }
         .spinner {
             width: 50px; height: 50px;
             border: 5px solid rgba(255, 255, 255, 0.3);
             border-top-color: var(--accent-color);
-            border-radius: 50%; animation: spin 1s linear infinite;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
-        #loader-text { font-size: 1.1rem; font-weight: 600; }
+        .loading-overlay p { font-size: 1.1rem; font-weight: 600; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Responsive Media Queries */
         @media (max-width: 550px) {
-            body { justify-content: flex-start; padding-top: 20px; font-size: 14px; }
-            #home-page h1 { font-size: 2.2rem; } #home-page p { font-size: 1rem; }
-            .auth-container { width: 100%; padding: 0 10px; }
-            .auth-container .container { border-radius: 15px; }
-            .app-wrapper { width: 100%; }
-            .container { border-radius: 0; min-height: calc(100vh - 80px); padding: 15px; }
+            .auth-wrapper, .app-wrapper { width: 100%; }
+            .container { border-radius: 0; min-height: calc(100vh - 20px); padding: 20px 15px; }
             .nav { border-radius: 0; }
-            h1 { font-size: 1.5rem; } h3 { font-size: 1.1rem; margin: 20px 0 10px; } h4 { font-size: 0.9rem; }
+            body { font-size: 14px; padding: 0; justify-content: flex-start; }
+            h1 { font-size: 1.5rem; }
+            h3 { font-size: 1.1rem; margin: 20px 0 10px; }
+            h4 { font-size: 0.9rem; }
             #balance { font-size: 2.1rem; margin-bottom: 20px; }
             .money { font-size: 1.3rem; }
             .summary-container { padding: 15px; margin: 15px 0; }
             .btn, .nav-btn, input, select, textarea { font-size: 14px; }
-            .list li { padding: 10px; } .list li .details { font-size: 0.9rem; }
-            .overview-text .percentage { font-size: 2rem; } .overview-text .label { font-size: 0.9rem; }
+            .list li { padding: 10px; }
+            .list li .details { font-size: 0.9rem; }
+            .overview-text .percentage { font-size: 2rem; }
+            .overview-text .label { font-size: 0.9rem; }
         }
     </style>
 </head>
@@ -326,84 +291,67 @@
     
     <canvas id="three-canvas"></canvas>
 
-    <!-- Home Page -->
-    <div id="home-page" class="auth-page visible">
-        <img src="https://i.ibb.co/L5w2x1D/finance-app.png" alt="Financial Planning Illustration">
-        <h1>Welcome to AuraBudget</h1>
-        <p>Your personal finance companion. Track, analyze, and achieve your financial goals with ease.</p>
-        <button id="get-started-btn" class="btn">
-            <i class="fas fa-rocket"></i> Get Started
-        </button>
-    </div>
-
-    <!-- Auth Container -->
-    <div id="auth-container" class="auth-container">
-        <!-- Login Page -->
-        <div id="login-page" class="auth-page">
-            <div class="container">
-                <h2>Login</h2>
-                <div class="auth-error" id="login-error"></div>
-                <form id="login-form">
-                    <div class="input-group">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="login-email" placeholder="Email" required>
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="login-password" placeholder="Password" required>
-                    </div>
-                    <button type="submit" class="btn">Login</button>
-                    <a href="#" class="auth-link" id="goto-forgot">Forgot Password?</a>
-                    <a href="#" class="auth-link" id="goto-signup">Don't have an account? Sign Up</a>
-                </form>
-            </div>
+    <!-- AUTHENTICATION WRAPPER -->
+    <div class="auth-wrapper">
+        <!-- LOGIN PAGE -->
+        <div id="login-page" class="auth-page active container">
+            <h1>Login</h1>
+            <form id="login-form">
+                <div id="login-error" class="auth-error"></div>
+                <div class="form-control">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="Enter your email">
+                </div>
+                <div class="form-control">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+            </form>
+            <a href="#" class="auth-link" data-page="forgot-password-page">Forgot Password?</a>
+            <a href="#" class="auth-link" data-page="signup-page">Don't have an account? <strong>Sign Up</strong></a>
         </div>
-
-        <!-- Sign Up Page -->
-        <div id="signup-page" class="auth-page">
-            <div class="container">
-                <h2>Create Account</h2>
-                <div class="auth-error" id="signup-error"></div>
-                <form id="signup-form">
-                     <div class="input-group">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="signup-email" placeholder="Email" required>
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="signup-password" placeholder="Password" required>
-                    </div>
-                    <button type="submit" class="btn">Sign Up</button>
-                    <a href="#" class="auth-link" id="goto-login-from-signup">Already have an account? Login</a>
-                </form>
-            </div>
+        <!-- SIGNUP PAGE -->
+        <div id="signup-page" class="auth-page container">
+            <h1>Sign Up</h1>
+            <form id="signup-form">
+                <div id="signup-error" class="auth-error"></div>
+                <div class="form-control">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required placeholder="Enter your email">
+                </div>
+                <div class="form-control">
+                    <label for="signup-password">Password (min. 6 characters)</label>
+                    <input type="password" id="signup-password" required placeholder="Create a password">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-user-plus"></i> Create Account</button>
+            </form>
+            <a href="#" class="auth-link" data-page="login-page">Already have an account? <strong>Login</strong></a>
         </div>
-
-        <!-- Forgot Password Page -->
-        <div id="forgot-password-page" class="auth-page">
-            <div class="container">
-                <h2>Reset Password</h2>
-                <div class="auth-error" id="forgot-error"></div>
-                <p style="text-align: center; margin-bottom: 20px; font-size: 14px;">Enter your email and we'll send you a link to reset your password.</p>
-                <form id="forgot-password-form">
-                     <div class="input-group">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" id="forgot-email" placeholder="Your Email" required>
-                    </div>
-                    <button type="submit" class="btn">Send Reset Link</button>
-                    <a href="#" class="auth-link" id="goto-login-from-forgot">Back to Login</a>
-                </form>
-            </div>
+        <!-- FORGOT PASSWORD PAGE -->
+        <div id="forgot-password-page" class="auth-page container">
+            <h1>Reset Password</h1>
+            <form id="forgot-password-form">
+                <div id="forgot-password-error" class="auth-error"></div>
+                <div id="forgot-password-success" class="auth-success"></div>
+                <p style="margin-bottom: 20px; opacity: 0.9;">Enter your email address and we will send you a link to reset your password.</p>
+                <div class="form-control">
+                    <label for="forgot-password-email">Email</label>
+                    <input type="email" id="forgot-password-email" required placeholder="Enter your registered email">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
+            </form>
+            <a href="#" class="auth-link" data-page="login-page">Back to <strong>Login</strong></a>
         </div>
     </div>
 
 
-    <!-- Main Application Wrapper -->
+    <!-- MAIN APPLICATION WRAPPER -->
     <div class="app-wrapper">
         <nav class="nav">
             <button class="nav-btn active" data-page="tracker">Tracker</button>
             <button class="nav-btn" data-page="dashboard">Dashboard</button>
-            <button id="logout-btn" class="nav-btn"><i class="fas fa-sign-out-alt"></i></button>
+            <button class="nav-btn logout-btn" id="logout-btn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
         </nav>
         
         <div id="tracker" class="page active container">
@@ -421,7 +369,7 @@
                 </div>
             </div>
             
-            <button id="open-add-transaction-btn" class="btn"><i class="fas fa-plus"></i> Add New Transaction</button>
+            <button id="open-add-transaction-btn" class="btn"><i class="fas fa-plus-circle"></i> Add New Transaction</button>
             
             <div class="history-controls">
                 <h3>History</h3>
@@ -515,44 +463,41 @@
                     <label for="amount">Amount</label>
                     <input type="number" id="amount" placeholder="Enter expense amount..." autocomplete="off" min="0" step="0.01"/>
                 </div>
-                <button class="btn">Add Transaction</button>
+                <button class="btn"><i class="fas fa-check-circle"></i> Add Transaction</button>
             </form>
         </div>
     </div>
 
-    <!-- Global Loading Overlay -->
-    <div id="loader" class="flex-visible">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
-        <p id="loader-text">Initializing App...</p>
+        <p id="loading-text">Loading...</p>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- PASTE YOUR FIREBASE CONFIGURATION HERE ---
+    // --- FIREBASE SETUP ---
+    // IMPORTANT: Replace this with your own Firebase project configuration!
     const firebaseConfig = {
-        apiKey: "AIzaSyCPTlKkV5PK1XjwMtxuNrowmP4Qt3py0sE",
-        authDomain: "login-8f29c.firebaseapp.com",
-        databaseURL: "https://login-8f29c-default-rtdb.firebaseio.com",
-        projectId: "login-8f29c",
-        storageBucket: "login-8f29c.firebasestorage.app",
-        messagingSenderId: "935493666066",
-        appId: "1:935493666066:web:baeeebb56ead2604241fcb",
-        measurementId: "G-R53KQHSL99"
+      apiKey: "AIzaSyCPTlKkV5PK1XjwMtxuNrowmP4Qt3py0sE",
+      authDomain: "login-8f29c.firebaseapp.com",
+      databaseURL: "https://login-8f29c-default-rtdb.firebaseio.com",
+      projectId: "login-8f29c",
+      storageBucket: "login-8f29c.firebasestorage.app",
+      messagingSenderId: "935493666066",
+      appId: "1:935493666066:web:baeeebb56ead2604241fcb",
+      measurementId: "G-R53KQHSL99"
     };
 
-    // --- INITIALIZE FIREBASE ---
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
-    // --- GLOBAL STATE ---
-    let transactions = [];
-    let currentUser = null;
-    let transactionListener = null; // To hold the database listener reference
-    let categoryChartInstance = null;
-
-    // --- DOM ELEMENTS ---
+    // --- DOM ELEMENTS & APP STATE ---
+    // App Elements
+    const appWrapper = document.querySelector('.app-wrapper');
     const balance = document.getElementById('balance'),
           money_plus = document.getElementById('money-plus'),
           money_minus = document.getElementById('money-minus'),
@@ -571,43 +516,29 @@ document.addEventListener('DOMContentLoaded', () => {
           downloadReportBtn = document.getElementById('download-report-btn'),
           startDateInput = document.getElementById('start-date'),
           endDateInput = document.getElementById('end-date'),
-          loader = document.getElementById('loader'),
-          loaderText = document.getElementById('loader-text');
+          loadingOverlay = document.getElementById('loading-overlay'),
+          loadingText = document.getElementById('loading-text'),
+          logoutBtn = document.getElementById('logout-btn');
 
-    const appWrapper = document.querySelector('.app-wrapper'),
-          authContainer = document.getElementById('auth-container');
-    
-    const allPages = {
-        home: document.getElementById('home-page'),
-        login: document.getElementById('login-page'),
-        signup: document.getElementById('signup-page'),
-        forgot: document.getElementById('forgot-password-page')
-    };
+    // Auth Elements
+    const authWrapper = document.querySelector('.auth-wrapper');
+    const authPages = document.querySelectorAll('.auth-page');
+    const authLinks = document.querySelectorAll('.auth-link');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    const loginError = document.getElementById('login-error');
+    const signupError = document.getElementById('signup-error');
+    const forgotPasswordError = document.getElementById('forgot-password-error');
+    const forgotPasswordSuccess = document.getElementById('forgot-password-success');
 
-    // --- LOADER & PAGE NAVIGATION ---
-    const showLoader = (text) => {
-        loaderText.textContent = text;
-        loader.classList.add('flex-visible');
-    };
-    const hideLoader = () => loader.classList.remove('flex-visible');
-    
-    const showAuthPage = (pageName) => {
-        appWrapper.classList.remove('visible');
-        authContainer.classList.add('visible');
-        Object.values(allPages).forEach(p => p.classList.remove('visible'));
-        if (allPages[pageName]) {
-            allPages[pageName].classList.add('visible');
-            gsap.from(allPages[pageName].querySelector('.container, #home-page'), { duration: 0.5, y: 30, opacity: 0, ease: 'power2.out' });
-        }
-    };
+    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
+    const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
 
-    const showApp = () => {
-        authContainer.classList.remove('visible');
-        Object.values(allPages).forEach(p => p.classList.remove('visible'));
-        appWrapper.classList.add('visible');
-        document.body.style.justifyContent = 'flex-start'; // Align app to top
-        gsap.from('.app-wrapper', { duration: 0.7, y: -50, opacity: 0, ease: 'power3.out' });
-    };
+    let allTransactions = []; // This will hold all transactions from the DB
+    let currentUserId = null;
+    let dbListener = null; // To hold the reference to the DB listener
+    let categoryChartInstance = null;
 
     // --- 3D BACKGROUND ---
     function initThree() {
@@ -641,120 +572,134 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initThree();
 
+    // --- LOADING OVERLAY ---
+    function showLoading(message = 'Loading...') {
+        loadingText.textContent = message;
+        loadingOverlay.style.display = 'flex';
+    }
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+    }
+    
     // --- AUTHENTICATION LOGIC ---
     auth.onAuthStateChanged(user => {
         if (user) {
-            currentUser = user;
-            loadUserData(user.uid);
-            showApp();
-            hideLoader();
+            // User is signed in.
+            currentUserId = user.uid;
+            authWrapper.style.display = 'none';
+            appWrapper.style.display = 'block';
+            gsap.from('.app-wrapper', { duration: 0.7, y: -30, opacity: 0, ease: 'power3.out' });
+            initAppForUser(currentUserId);
         } else {
-            currentUser = null;
-            if (transactionListener) { // Detach old listener
-                db.ref(`transactions/${currentUser.uid}`).off('value', transactionListener);
+            // User is signed out.
+            currentUserId = null;
+            if (dbListener) {
+                db.ref('transactions/' + currentUserId).off('value', dbListener);
             }
-            transactions = [];
-            updateUI(); // Clear the UI
-            document.body.style.justifyContent = 'center'; // Re-center for auth page
-            showAuthPage('login');
-            hideLoader();
+            allTransactions = [];
+            updateUI(); // Clear UI
+            appWrapper.style.display = 'none';
+            authWrapper.style.display = 'block';
+            showAuthPage('login-page');
+            hideLoading();
         }
     });
 
-    // Login
-    document.getElementById('login-form').addEventListener('submit', (e) => {
+    function showAuthPage(pageId) {
+        authPages.forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        gsap.from(`#${pageId}`, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
+    }
+
+    authLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuthPage(link.dataset.page);
+        });
+    });
+
+    // Handle Login
+    loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
-        const errorDiv = document.getElementById('login-error');
-        showLoader('Logging In...');
+        showLoading('Logging In...');
         auth.signInWithEmailAndPassword(email, password)
             .catch(error => {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-                hideLoader();
+                loginError.textContent = error.message;
+                loginError.style.display = 'block';
+                hideLoading();
             });
     });
 
-    // Signup
-    document.getElementById('signup-form').addEventListener('submit', (e) => {
+    // Handle Sign Up
+    signupForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
-        const errorDiv = document.getElementById('signup-error');
-        showLoader('Creating Account...');
+        showLoading('Creating Account...');
         auth.createUserWithEmailAndPassword(email, password)
             .catch(error => {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-                hideLoader();
+                signupError.textContent = error.message;
+                signupError.style.display = 'block';
+                hideLoading();
             });
     });
-
-    // Forgot Password
-    document.getElementById('forgot-password-form').addEventListener('submit', (e) => {
+    
+    // Handle Forgot Password
+    forgotPasswordForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const email = document.getElementById('forgot-email').value;
-        const errorDiv = document.getElementById('forgot-error');
-        showLoader('Sending Email...');
+        const email = document.getElementById('forgot-password-email').value;
+        showLoading('Sending Link...');
         auth.sendPasswordResetEmail(email)
             .then(() => {
-                hideLoader();
-                alert('Password reset email sent! Check your inbox.');
-                showAuthPage('login');
+                forgotPasswordSuccess.textContent = 'Password reset link sent! Check your email.';
+                forgotPasswordSuccess.style.display = 'block';
+                forgotPasswordError.style.display = 'none';
+                hideLoading();
             })
             .catch(error => {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
-                hideLoader();
+                forgotPasswordError.textContent = error.message;
+                forgotPasswordError.style.display = 'block';
+                forgotPasswordSuccess.style.display = 'none';
+                hideLoading();
             });
     });
 
-    // Logout
-    document.getElementById('logout-btn').addEventListener('click', () => {
-        showLoader('Logging Out...');
+
+    // Handle Logout
+    logoutBtn.addEventListener('click', () => {
+        showLoading('Logging Out...');
         auth.signOut();
     });
 
-    // Auth page navigation
-    document.getElementById('get-started-btn').addEventListener('click', () => showAuthPage('login'));
-    document.getElementById('goto-signup').addEventListener('click', (e) => { e.preventDefault(); showAuthPage('signup'); });
-    document.getElementById('goto-forgot').addEventListener('click', (e) => { e.preventDefault(); showAuthPage('forgot'); });
-    document.getElementById('goto-login-from-signup').addEventListener('click', (e) => { e.preventDefault(); showAuthPage('login'); });
-    document.getElementById('goto-login-from-forgot').addEventListener('click', (e) => { e.preventDefault(); showAuthPage('login'); });
-
-
-    // --- FIREBASE DATABASE LOGIC ---
-    function loadUserData(uid) {
-        showLoader('Loading your data...');
-        const userTransactionsRef = db.ref(`transactions/${uid}`);
+    // --- REALTIME DATABASE & APP LOGIC ---
+    function initAppForUser(userId) {
+        const userTransactionsRef = db.ref('transactions/' + userId);
         
-        // Detach any previous listener before attaching a new one
-        if (transactionListener) {
-            userTransactionsRef.off('value', transactionListener);
+        // Detach any old listener before attaching a new one
+        if (dbListener) {
+            userTransactionsRef.off('value', dbListener);
         }
 
-        transactionListener = userTransactionsRef.on('value', (snapshot) => {
+        dbListener = userTransactionsRef.on('value', (snapshot) => {
             const data = snapshot.val();
-            transactions = [];
+            allTransactions = [];
             if (data) {
-                transactions = Object.keys(data).map(key => ({
-                    id: key, // Use Firebase key as ID
+                // Convert Firebase object to array
+                allTransactions = Object.keys(data).map(key => ({
+                    id: key,
                     ...data[key]
                 }));
             }
             updateUI();
-            hideLoader();
-        }, (error) => {
-            console.error(error);
-            alert("Could not load your data. Please try again.");
-            hideLoader();
         });
     }
 
-    // --- CORE BUDGETING LOGIC (MODIFIED FOR FIREBASE) ---
     function addTransaction(e) {
         e.preventDefault();
+        if (!currentUserId) return;
+
         const enteredAmount = +amount.value;
         if (text.value.trim() === '' || amount.value.trim() === '' || enteredAmount <= 0) {
             gsap.from(form, { x: -10, duration: 0.5, ease: "elastic.out(1, 0.3)" });
@@ -769,8 +714,9 @@ document.addEventListener('DOMContentLoaded', () => {
             category: category.value
         };
 
-        db.ref(`transactions/${currentUser.uid}`).push(transaction);
-        // UI will update automatically via the 'onValue' listener
+        // Push to Firebase
+        db.ref('transactions/' + currentUserId).push(transaction);
+        // The real-time listener will handle the UI update automatically.
         
         text.value = '';
         amount.value = '';
@@ -780,13 +726,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function removeTransaction(id) {
-        if (!currentUser) return;
-        db.ref(`transactions/${currentUser.uid}/${id}`).remove();
-        // UI will update automatically via the 'onValue' listener
+        if (!currentUserId) return;
+        // Remove from Firebase
+        db.ref('transactions/' + currentUserId + '/' + id).remove();
+        // The real-time listener will handle the UI update automatically.
     }
-    
+
     function getFilteredTransactions() {
-        // ... (this function remains the same)
         const filterValue = filterControl.value;
         const startDateValue = startDateInput.value;
         const endDateValue = endDateInput.value;
@@ -797,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (startDate) startDate.setHours(0, 0, 0, 0);
         if (endDate) endDate.setHours(23, 59, 59, 999);
 
-        return transactions.filter(t => {
+        return allTransactions.filter(t => {
             const transactionDate = new Date(t.date);
             const typeMatch = (filterValue === 'all') || 
                               (filterValue === 'income' && t.amount > 0) || 
@@ -811,7 +757,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderTransactionList() {
-        // ... (this function remains the same, but uses Firebase key for data-id)
         list.innerHTML = '';
         const filteredTransactions = getFilteredTransactions();
         
@@ -821,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('li');
             item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
             item.innerHTML = `
-                <button class="delete-btn" data-id="${transaction.id}"><i class="fas fa-trash"></i></button>
+                <button class="delete-btn" data-id="${transaction.id}"><i class="fas fa-trash-alt"></i></button>
                 <div class="details">
                     ${transaction.text}
                     <span class="category">${transaction.category} • ${formatDateTime(transaction.date)}</span>
@@ -834,8 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateSummary() {
-        // ... (this function remains the same)
-        const amounts = transactions.map(t => t.amount);
+        const amounts = allTransactions.map(t => t.amount);
         const total = amounts.reduce((acc, item) => acc + item, 0);
         const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
         const expense = (amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0)) * -1;
@@ -853,560 +797,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- PDF REPORT GENERATION & DASHBOARD (Unchanged) ---
-    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
-    const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
-
+    // --- PDF REPORT GENERATION ---
     function generatePDF() {
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF.API.autoTable === 'undefined') {
-            alert('Error: PDF library not loaded. Please check your internet connection.'); return;
+            alert('Error: PDF library not loaded. Please check your internet connection and try again.'); return;
         }
         const dataToReport = getFilteredTransactions();
         if (dataToReport.length === 0) {
-            alert('No transactions found for the selected filters.'); return;
+            alert('No transactions found for the selected filters. Cannot generate a report.'); return;
         }
-        showLoader('Generating Report...');
+        showLoading('Generating Report...');
         setTimeout(() => {
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                const filterType = filterControl.options[filterControl.selectedIndex].text, startDate = startDateInput.value || 'Start', endDate = endDateInput.value || 'End';
-                doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.text('Budget Transaction Report', 105, 20, { align: 'center' });
-                doc.setFontSize(10); doc.setFont('helvetica', 'normal'); doc.text(`Report Generated: ${new Date().toLocaleString('en-IN')}`, 105, 28, { align: 'center' });
+                const filterType = filterControl.options[filterControl.selectedIndex].text;
+                const startDate = startDateInput.value || 'Start';
+                const endDate = endDateInput.value || 'End';
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(20);
+                doc.text('Budget Transaction Report', 105, 20, { align: 'center' });
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Report Generated: ${new Date().toLocaleString('en-IN')}`, 105, 28, { align: 'center' });
                 doc.text(`Filters: ${filterType} transactions from ${startDate} to ${endDate}`, 105, 34, { align: 'center' });
-                const amounts = dataToReport.map(t => t.amount), total = amounts.reduce((a, i) => a + i, 0), income = amounts.filter(i => i > 0).reduce((a, i) => a + i, 0), expense = Math.abs(amounts.filter(i => i < 0).reduce((a, i) => a + i, 0));
-                doc.autoTable({ body: [['Filtered Income', `+${formatMoney(income)}`], ['Filtered Expense', `-${formatMoney(expense)}`], ['Net Result for Period', formatMoney(total)]], startY: 45, theme: 'grid', styles: { font: 'helvetica', fontStyle: 'bold' }, columnStyles: { 1: { halign: 'right' } } });
-                const tableColumn = ["Date & Time", "Description", "Category", "Amount (INR)"], tableRows = [];
-                dataToReport.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => tableRows.push([formatDateTime(t.date), t.text, t.category, { content: formatMoney(t.amount), styles: { halign: 'right' } }]));
-                doc.autoTable({ head: [tableColumn], body: tableRows, startY: doc.lastAutoTable.finalY + 10, theme: 'striped', headStyles: { fillColor: [22, 33, 62] }, didParseCell: d => { if (d.section === 'body' && d.column.index === 3) { if (d.cell.raw.content.includes('-')) d.cell.styles.textColor = [192, 57, 43]; else d.cell.styles.textColor = [46, 204, 113]; d.cell.styles.fontStyle = 'bold'; } }, didDrawPage: d => { doc.setFontSize(10); doc.text('Page ' + d.pageNumber, d.settings.margin.left, doc.internal.pageSize.height - 10); } });
-                doc.save(`budget-report-${new Date().toISOString().slice(0, 10)}.pdf`);
-                hideLoader();
-            } catch(error) { console.error("PDF Error:", error); alert("Error generating report."); hideLoader(); }
+                const amounts = dataToReport.map(t => t.amount);
+                const total = amounts.reduce((acc, item) => acc + item, 0);
+                const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
+                const expense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0));
+                doc.autoTable({
+                    body: [
+                        ['Filtered Income', `+${formatMoney(income)}`],
+                        ['Filtered Expense', `-${formatMoney(expense)}`],
+                        ['Net Result for Period', formatMoney(total)],
+                    ],
+                    startY: 45, theme: 'grid', styles: { font: 'helvetica', fontStyle: 'bold' },
+                    columnStyles: { 1: { halign: 'right' } }
+                });
+                const tableColumn = ["Date & Time", "Description", "Category", "Amount (INR)"];
+                const tableRows = [];
+                dataToReport.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+                    tableRows.push([
+                        formatDateTime(t.date),
+                        t.text,
+                        t.category,
+                        { content: formatMoney(t.amount), styles: { halign: 'right' } }
+                    ]);
+                });
+                doc.autoTable({
+                    head: [tableColumn], body: tableRows, startY: doc.lastAutoTable.finalY + 10,
+                    theme: 'striped', headStyles: { fillColor: [22, 33, 62] },
+                    didParseCell: function (data) {
+                        if (data.section === 'body' && data.column.index === 3) {
+                            if (data.cell.raw.content.includes('-')) { data.cell.styles.textColor = [192, 57, 43]; } 
+                            else { data.cell.styles.textColor = [46, 204, 113]; }
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    },
+                    didDrawPage: function (data) {
+                        const pageCount = doc.internal.getNumberOfPages();
+                        doc.setFontSize(10);
+                        doc.text('Page ' + data.pageNumber + ' of ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                    }
+                });
+                const date = new Date().toISOString().slice(0, 10);
+                doc.save(`budget-report-${date}.pdf`);
+                hideLoading();
+            } catch(error) {
+                console.error("Failed to generate PDF:", error);
+                alert("Sorry, there was an unexpected error while generating the report.");
+                hideLoading();
+            }
         }, 250); 
     }
 
-    function renderDashboard() {
-        const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-        const totalExpense = Math.abs(transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0));
-        renderBudgetOverview(totalIncome, totalExpense);
-        renderCategoryChart();
-    }
-    
-    function renderBudgetOverview(income, expense) {
-        const percentageElem = document.getElementById('budget-percentage'), progressCircle = document.getElementById('progress-circle');
-        const radius = progressCircle.r.baseVal.value, circumference = 2 * Math.PI * radius;
-        let percentage = (income > 0) ? Math.min((expense / income) * 100, 100) : 0;
-        const offset = circumference - (percentage / 100) * circumference;
-        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-        gsap.to(progressCircle, { strokeDashoffset: offset, duration: 1.5, ease: 'power3.out' });
-        let animatedValue = { val: parseFloat(percentageElem.innerText.replace('%', '')) || 0 };
-        gsap.to(animatedValue, { val: percentage, duration: 1.5, ease: 'power3.out', onUpdate: () => { percentageElem.innerText = `${animatedValue.val.toFixed(0)}%`; } });
-    }
-
-    function renderCategoryChart() {
-        if (categoryChartInstance) categoryChartInstance.destroy();
-        const expenseTransactions = transactions.filter(t => t.amount < 0);
-        const spendingByCategory = expenseTransactions.reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount); return acc; }, {});
-        const ctx = document.getElementById('category-chart').getContext('2d');
-        categoryChartInstance = new Chart(ctx, {
-            type: 'bar', data: { labels: Object.keys(spendingByCategory), datasets: [{ label: 'Spending', data: Object.values(spendingByCategory), backgroundColor: ['rgba(233, 69, 96, 0.7)', 'rgba(22, 33, 62, 0.7)', 'rgba(15, 52, 96, 0.7)', 'rgba(46, 204, 113, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)', 'rgba(241, 196, 15, 0.7)'], borderColor: chartBorderColor, borderWidth: 1, borderRadius: 5, }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => formatMoney(c.raw) } } }, scales: { y: { beginAtZero: true, ticks: { color: chartTextColor, font: { family: "'Poppins', sans-serif" } }, grid: { color: chartBorderColor } }, x: { ticks: { color: chartTextColor, font: { family: "'Poppins', sans-serif" } }, grid: { color: 'transparent' } } } }
-        });
-    }
-
-    // --- HELPERS & UI BINDING (Unchanged) ---
-    function formatMoney(number) { const sign = number < 0 ? "- " : ""; return `${sign}Rs. ${Math.abs(number).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
-    function formatDateTime(isoString) { return new Date(isoString).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true }).replace(/,/g, ''); }
-    function updateToggleUI() {
-        if (transactionType.checked) { amount.placeholder = "Enter income amount..."; category.value = "Salary"; }
-        else { amount.placeholder = "Enter expense amount..."; category.value = "Groceries"; }
-    }
-    list.addEventListener('click', event => {
-        const deleteButton = event.target.closest('.delete-btn');
-        if (deleteButton) {
-            const id = deleteButton.dataset.id;
-            const itemToRemove = deleteButton.closest('li');
-            gsap.to(itemToRemove, { duration: 0.5, opacity: 0, x: -50, ease: 'power2.in', onComplete: () => removeTransaction(id) });
-        }
-    });
-    navButtons.forEach(btn => {
-        if (btn.id === 'logout-btn') return;
-        btn.addEventListener('click', () => {
-            const pageId = btn.dataset.page;
-            navButtons.forEach(b => { if (b.id !== 'logout-btn') b.classList.remove('active'); });
-            btn.classList.add('active');
-            pages.forEach(p => p.classList.toggle('active', p.id === pageId));
-            if (pageId === 'dashboard') {
-                gsap.from('#dashboard.active > *', { duration: 0.5, y: 30, opacity: 0, stagger: 0.1 });
-                renderDashboard();
-            }
-        });
-    });
-
-    // --- INITIALIZATION & EVENT LISTENERS (Unchanged) ---
-    form.addEventListener('submit', addTransaction);
-    transactionType.addEventListener('change', updateToggleUI);
-    openAddTransactionBtn.addEventListener('click', () => addTransactionModal.classList.add('show'));
-    closeModalBtn.addEventListener('click', () => addTransactionModal.classList.remove('show'));
-    window.addEventListener('click', e => { if (e.target === addTransactionModal) addTransactionModal.classList.remove('show'); });
-    filterControl.addEventListener('change', renderTransactionList);
-    startDateInput.addEventListener('change', renderTransactionList);
-    endDateInput.addEventListener('change', renderTransactionList);
-    downloadReportBtn.addEventListener('click', generatePDF);
-    updateToggleUI();
-    showAuthPage('home'); // Show home page on first load
-    
-});
-</script>
-
-</body>
-</html>port" content="width=device-width, initial-scale=1.0" />
-    <title>Dashboard Budget Tracker</title>
-    
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-    <!-- CDN for Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        :root {
-            --bg-color: #1a1a2e;
-            --primary-color: #16213e;
-            --secondary-color: #0f3460;
-            --accent-color: #e94560;
-            --text-color: #e0e0e0;
-            --income-color: #2ecc71;
-            --expense-color: #c0392b;
-            --glass-bg: rgba(22, 33, 62, 0.65);
-            --border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        #three-canvas {
-            position: fixed; top: 0; left: 0; z-index: -1;
-        }
-
-        .app-wrapper {
-            width: 95%;
-            max-width: 500px;
-            z-index: 1;
-        }
-
-        .container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-            padding: 25px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            margin-top: 15px;
-        }
-
-        /* Navigation */
-        .nav {
-            display: flex;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
-            padding: 5px;
-        }
-        .nav-btn {
-            flex: 1;
-            padding: 10px;
-            background: transparent;
-            border: none;
-            color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            border-radius: 12px;
-            transition: background-color 0.3s ease;
-        }
-        .nav-btn.active {
-            background-color: var(--accent-color);
-            color: #fff;
-            box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
-        }
-        
-        .page { display: none; }
-        .page.active { display: block; }
-        
-        h1, h3, h4 { letter-spacing: 1px; }
-        h1 { margin: 0 0 10px; text-align: center; font-weight: 700; color: #fff; }
-        h4 { margin: 0; text-transform: uppercase; font-weight: 600; }
-
-        /* Tracker Page Styles */
-        #balance { font-size: 2.5rem; letter-spacing: 1px; font-weight: 700; text-align: center; margin-bottom: 25px; }
-
-        .summary-container {
-            background: rgba(0, 0, 0, 0.2); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); border-radius: 15px;
-            padding: 20px; display: flex; justify-content: space-between; margin: 20px 0;
-        }
-        .summary-container > div { flex: 1; text-align: center; }
-        .summary-container > div:first-of-type { border-right: 1px solid var(--border-color); }
-        .money { font-size: 1.5rem; letter-spacing: 1px; margin: 5px 0; font-weight: 600; }
-        .money.plus { color: var(--income-color); }
-        .money.minus { color: var(--expense-color); }
-
-        h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 15px; font-weight: 600; }
-        label { display: block; margin: 10px 0; font-weight: 400; }
-        
-        input[type='text'], input[type='number'], select {
-            border: 1px solid var(--border-color); border-radius: 8px; display: block; font-size: 16px;
-            padding: 12px; width: 100%; background: rgba(0, 0, 0, 0.2); color: var(--text-color);
-            font-family: 'Poppins', sans-serif;
-        }
-        select { cursor: pointer; }
-
-        .btn {
-            cursor: pointer; background-color: var(--secondary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            border: 0; color: #fff; display: block; font-size: 16px; margin: 20px 0 30px;
-            padding: 12px; width: 100%; border-radius: 8px; font-weight: 600;
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        .btn:hover { background-color: var(--accent-color); transform: scale(1.02); }
-        .btn:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-color); }
-
-        /* Animated Toggle Switch */
-        .type-toggle { margin: 25px 0; }
-        .toggle-switch {
-            position: relative;
-            display: block;
-            width: 100%;
-            cursor: pointer;
-        }
-        .toggle-switch input { display: none; }
-        .switch-body {
-            position: relative;
-            height: 44px;
-            background-color: var(--expense-color);
-            border-radius: 22px;
-            padding: 4px;
-            transition: background-color 0.4s ease-in-out;
-            display: flex;
-            align-items: center;
-        }
-        .thumb {
-            position: absolute;
-            width: calc(50% - 4px);
-            height: 36px;
-            background-color: rgba(0,0,0,0.3);
-            border-radius: 18px;
-            left: 4px;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .toggle-label {
-            width: 50%;
-            text-align: center;
-            font-weight: 600;
-            z-index: 1;
-            transition: color 0.4s ease-in-out;
-        }
-        .toggle-label.debit { color: #fff; }
-        .toggle-label.credit { color: rgba(255,255,255,0.5); }
-        
-        .toggle-switch input:checked + .switch-body { background-color: var(--income-color); }
-        .toggle-switch input:checked + .switch-body .thumb { transform: translateX(100%); }
-        .toggle-switch input:checked + .switch-body .toggle-label.debit { color: rgba(255,255,255,0.5); }
-        .toggle-switch input:checked + .switch-body .toggle-label.credit { color: #fff; }
-
-        .list { list-style-type: none; padding: 0; margin-bottom: 0; }
-        .list li {
-            background-color: rgba(0, 0, 0, 0.2); color: var(--text-color); display: flex;
-            justify-content: space-between; align-items: center; position: relative;
-            padding: 12px; margin: 10px 0; border-radius: 8px; border-right: 5px solid;
-            transition: opacity 0.3s ease;
-        }
-        .list li.plus { border-color: var(--income-color); }
-        .list li.minus { border-color: var(--expense-color); }
-        .list li .details { display: flex; flex-direction: column; flex-grow: 1; margin: 0 10px; }
-        .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; }
-        .delete-btn {
-            cursor: pointer; background-color: var(--accent-color); border: 0; color: #fff;
-            font-size: 18px; line-height: 20px; padding: 5px 8px; border-radius: 5px;
-            position: absolute; top: 50%; left: 0; transform: translate(-100%, -50%);
-            opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .list li:hover .delete-btn { opacity: 1; transform: translate(-120%, -50%); }
-        
-        /* Dashboard Page Styles */
-        .dashboard-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .chart-container {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .budget-overview {
-            position: relative; display: flex; justify-content: center; align-items: center;
-        }
-        .budget-overview svg { width: 200px; height: 200px; transform: rotate(-90deg); }
-        .budget-overview circle { fill: none; stroke-width: 20; }
-        .budget-overview .bg-circle { stroke: rgba(255,255,255,0.1); }
-        .budget-overview .progress-circle { stroke: url(#gradient); stroke-linecap: round; }
-        .overview-text { position: absolute; text-align: center; }
-        .overview-text .percentage { font-size: 2.5rem; font-weight: 700; }
-        .overview-text .label { font-size: 1rem; color: #aaa; }
-        
-        @media (max-width: 550px) {
-            .app-wrapper { width: 100%; }
-            .container { border-radius: 0; min-height: calc(100vh - 80px); }
-            .nav { border-radius: 0; }
-        }
-    </style>
-</head>
-<body>
-    
-    <canvas id="three-canvas"></canvas>
-
-    <div class="app-wrapper">
-        <nav class="nav">
-            <button class="nav-btn active" data-page="tracker">Tracker</button>
-            <button class="nav-btn" data-page="dashboard">Dashboard</button>
-        </nav>
-        
-        <div id="tracker" class="page active container">
-            <h4>Your Balance</h4>
-            <h1 id="balance">$0.00</h1>
-
-            <div class="summary-container">
-                <div>
-                    <h4>Income</h4>
-                    <p id="money-plus" class="money plus">+$0.00</p>
-                </div>
-                <div>
-                    <h4>Expense</h4>
-                    <p id="money-minus" class="money minus">-$0.00</p>
-                </div>
-            </div>
-
-            <h3>History</h3>
-            <ul id="list" class="list"></ul>
-
-            <h3>Add New Transaction</h3>
-            <form id="form">
-                <div class="type-toggle">
-                    <label>Transaction Type</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="transaction-type">
-                        <div class="switch-body">
-                            <div class="thumb"></div>
-                            <div class="toggle-label debit">Debit</div>
-                            <div class="toggle-label credit">Credit</div>
-                        </div>
-                    </label>
-                </div>
-                <div class="form-control">
-                    <label for="text">Description</label>
-                    <input type="text" id="text" placeholder="e.g., Groceries" autocomplete="off"/>
-                </div>
-                <div class="form-control">
-                    <label for="category">Category</label>
-                    <select id="category">
-                        <option value="Salary">Salary</option>
-                        <option value="Groceries">Groceries</option>
-                        <option value="Bills">Bills</option>
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Shopping">Shopping</option>
-                        <option value="Transport">Transport</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-control">
-                    <label for="amount">Amount</label>
-                    <input type="number" id="amount" placeholder="Enter expense amount..." autocomplete="off" min="0" step="0.01"/>
-                </div>
-                <button class="btn">Add Transaction</button>
-            </form>
-        </div>
-
-        <div id="dashboard" class="page container">
-            <h1>Dashboard</h1>
-            <div class="dashboard-grid">
-                <div class="chart-container">
-                    <h3>Budget Overview</h3>
-                    <div class="budget-overview">
-                        <svg>
-                            <defs>
-                                <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" style="stop-color:var(--income-color);stop-opacity:1" />
-                                  <stop offset="100%" style="stop-color:var(--accent-color);stop-opacity:1" />
-                                </linearGradient>
-                            </defs>
-                            <circle class="bg-circle" cx="100" cy="100" r="80"></circle>
-                            <circle id="progress-circle" class="progress-circle" cx="100" cy="100" r="80"></circle>
-                        </svg>
-                        <div class="overview-text">
-                            <span class="percentage" id="budget-percentage">0%</span>
-                            <span class="label">of income spent</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="chart-container">
-                    <h3>Expense by Category</h3>
-                    <canvas id="category-chart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-
-    // --- 3D BACKGROUND (No errors here) ---
-    function initThree() {
-        const canvas = document.getElementById('three-canvas');
-        if (!canvas) return;
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        const particleCount = 5000;
-        const positions = new Float32Array(particleCount * 3);
-        for(let i = 0; i < particleCount * 3; i++) positions[i] = (Math.random() - 0.5) * 20;
-        const particleGeometry = new THREE.BufferGeometry();
-        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particleMaterial = new THREE.PointsMaterial({ color: 0x0f3460, size: 0.03, transparent: true, blending: THREE.AdditiveBlending });
-        const particles = new THREE.Points(particleGeometry, particleMaterial);
-        scene.add(particles);
-        camera.position.z = 5;
-        const animate = () => {
-            requestAnimationFrame(animate);
-            particles.rotation.x += 0.0001;
-            particles.rotation.y += 0.0002;
-            renderer.render(scene, camera);
-        };
-        animate();
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }, false);
-    }
-    initThree();
-
-    // --- DOM ELEMENTS & APP STATE ---
-    const balance = document.getElementById('balance'),
-          money_plus = document.getElementById('money-plus'),
-          money_minus = document.getElementById('money-minus'),
-          list = document.getElementById('list'),
-          form = document.getElementById('form'),
-          text = document.getElementById('text'),
-          amount = document.getElementById('amount'),
-          category = document.getElementById('category'),
-          transactionType = document.getElementById('transaction-type'),
-          navButtons = document.querySelectorAll('.nav-btn'),
-          pages = document.querySelectorAll('.page');
-    
-    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
-    const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
-
-    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-    let categoryChartInstance = null;
-
-    // --- CORE LOGIC ---
-
-    function addTransaction(e) {
-        e.preventDefault();
-        const enteredAmount = +amount.value;
-        if (text.value.trim() === '' || amount.value.trim() === '' || enteredAmount <= 0) {
-            gsap.from(form, { x: -10, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-            alert('Please add a description and a valid positive amount.');
-            return;
-        }
-        
-        const transaction = {
-            id: Date.now(),
-            text: text.value,
-            amount: transactionType.checked ? enteredAmount : -enteredAmount,
-            category: category.value
-        };
-
-        transactions.push(transaction);
-        updateUI();
-        
-        // Clear form
-        text.value = '';
-        amount.value = '';
-        transactionType.checked = false;
-        updateToggleUI();
-    }
-
-    function removeTransaction(id) {
-        transactions = transactions.filter(t => t.id !== id);
-        updateUI();
-    }
-
-    function renderTransactionList() {
-        list.innerHTML = '';
-        transactions.forEach(transaction => {
-            const sign = transaction.amount < 0 ? '-' : '+';
-            const item = document.createElement('li');
-            item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
-            item.innerHTML = `
-                <button class="delete-btn" data-id="${transaction.id}">x</button>
-                <div class="details">
-                    ${transaction.text}
-                    <span class="category">${transaction.category}</span>
-                </div>
-                <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
-            `;
-            list.appendChild(item);
-            gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
-        });
-    }
-
-    function updateSummary() {
-        const amounts = transactions.map(t => t.amount);
-        const total = amounts.reduce((acc, item) => acc + item, 0);
-        const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
-        const expense = (amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0)) * -1;
-        
-        balance.innerText = formatMoney(total);
-        money_plus.innerText = `+${formatMoney(income)}`;
-        money_minus.innerText = `-${formatMoney(expense)}`;
-    }
-
-    function updateLocalStorage() {
-        localStorage.setItem('transactions', JSON.stringify(transactions));
-    }
-
-    function updateUI() {
-        updateSummary();
-        renderTransactionList();
-        updateLocalStorage();
-        if (document.querySelector('#dashboard.active')) {
-            renderDashboard();
-        }
-    }
-
     // --- DASHBOARD ---
-
     function renderDashboard() {
-        const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-        const totalExpense = Math.abs(transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0));
+        const totalIncome = allTransactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
+        const totalExpense = Math.abs(allTransactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0));
         renderBudgetOverview(totalIncome, totalExpense);
         renderCategoryChart();
     }
-
+    
     function renderBudgetOverview(income, expense) {
         const percentageElem = document.getElementById('budget-percentage');
         const progressCircle = document.getElementById('progress-circle');
@@ -1414,10 +886,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const circumference = 2 * Math.PI * radius;
         let percentage = (income > 0) ? Math.min((expense / income) * 100, 100) : 0;
         const offset = circumference - (percentage / 100) * circumference;
-        
         progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
         gsap.to(progressCircle, { strokeDashoffset: offset, duration: 1.5, ease: 'power3.out' });
-
         let animatedValue = { val: parseFloat(percentageElem.innerText.replace('%', '')) || 0 };
         gsap.to(animatedValue, {
             val: percentage, duration: 1.5, ease: 'power3.out',
@@ -1427,12 +897,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCategoryChart() {
         if (categoryChartInstance) categoryChartInstance.destroy();
-        const expenseTransactions = transactions.filter(t => t.amount < 0);
+        const expenseTransactions = allTransactions.filter(t => t.amount < 0);
         const spendingByCategory = expenseTransactions.reduce((acc, t) => {
             acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
             return acc;
         }, {});
-        
         const ctx = document.getElementById('category-chart').getContext('2d');
         categoryChartInstance = new Chart(ctx, {
             type: 'bar',
@@ -1457,42 +926,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- HELPERS & UI BINDING ---
     function formatMoney(number) {
-        return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        const sign = number < 0 ? "- " : "";
+        return `${sign}Rs. ${Math.abs(number).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
-
+    function formatDateTime(isoString) {
+        return new Date(isoString).toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true
+        }).replace(/,/g, '');
+    }
     function updateToggleUI() {
         if (transactionType.checked) {
-            amount.placeholder = "Enter income amount...";
-            category.value = "Salary";
+            amount.placeholder = "Enter income amount..."; category.value = "Salary";
         } else {
-            amount.placeholder = "Enter expense amount...";
-            category.value = "Groceries";
+            amount.placeholder = "Enter expense amount..."; category.value = "Groceries";
         }
     }
 
-    // *** THE FIX: Using Event Delegation for Deletes ***
     list.addEventListener('click', event => {
-        if (event.target.classList.contains('delete-btn')) {
-            const id = parseInt(event.target.dataset.id);
-            const itemToRemove = event.target.closest('li');
-            
+        const deleteButton = event.target.closest('.delete-btn');
+        if (deleteButton) {
+            const id = deleteButton.dataset.id;
+            const itemToRemove = deleteButton.closest('li');
             gsap.to(itemToRemove, {
                 duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
-                onComplete: () => {
-                    removeTransaction(id);
-                }
+                onComplete: () => removeTransaction(id)
             });
         }
     });
 
     navButtons.forEach(btn => {
+        if (btn.id === 'logout-btn') return; // Skip logout button
         btn.addEventListener('click', () => {
             const pageId = btn.dataset.page;
-            navButtons.forEach(b => b.classList.remove('active'));
+            navButtons.forEach(b => { if (b.id !== 'logout-btn') b.classList.remove('active'); });
             btn.classList.add('active');
-            
             pages.forEach(p => p.classList.toggle('active', p.id === pageId));
-            
             if (pageId === 'dashboard') {
                 gsap.from('#dashboard.active > *', { duration: 0.5, y: 30, opacity: 0, stagger: 0.1 });
                 renderDashboard();
@@ -1500,13 +968,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- INITIALIZATION ---
+    // --- INITIALIZATION & EVENT LISTENERS ---
     form.addEventListener('submit', addTransaction);
     transactionType.addEventListener('change', updateToggleUI);
+    openAddTransactionBtn.addEventListener('click', () => addTransactionModal.classList.add('show'));
+    closeModalBtn.addEventListener('click', () => addTransactionModal.classList.remove('show'));
+    window.addEventListener('click', e => {
+        if (e.target === addTransactionModal) addTransactionModal.classList.remove('show');
+    });
+    filterControl.addEventListener('change', renderTransactionList);
+    startDateInput.addEventListener('change', renderTransactionList);
+    endDateInput.addEventListener('change', renderTransactionList);
+    downloadReportBtn.addEventListener('click', generatePDF);
     
-    gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
-    updateUI(); // Initial render
-    updateToggleUI(); // Set initial placeholder
+    updateToggleUI();
 });
 </script>
 
