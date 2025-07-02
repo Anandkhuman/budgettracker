@@ -129,7 +129,7 @@
         .btn:hover { background-color: var(--accent-color); transform: scale(1.02); }
         .btn:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-color); }
 
-        /* --- NEW ANIMATED TOGGLE SWITCH --- */
+        /* Animated Toggle Switch */
         .type-toggle { margin: 25px 0; }
         .toggle-switch {
             position: relative;
@@ -137,8 +137,7 @@
             width: 100%;
             cursor: pointer;
         }
-        .toggle-switch input { display: none; } /* Hide the actual checkbox */
-
+        .toggle-switch input { display: none; }
         .switch-body {
             position: relative;
             height: 44px;
@@ -168,19 +167,10 @@
         .toggle-label.debit { color: #fff; }
         .toggle-label.credit { color: rgba(255,255,255,0.5); }
         
-        /* State when checkbox is checked (Credit) */
-        .toggle-switch input:checked + .switch-body {
-            background-color: var(--income-color);
-        }
-        .toggle-switch input:checked + .switch-body .thumb {
-            transform: translateX(100%);
-        }
-        .toggle-switch input:checked + .switch-body .toggle-label.debit {
-            color: rgba(255,255,255,0.5);
-        }
-        .toggle-switch input:checked + .switch-body .toggle-label.credit {
-            color: #fff;
-        }
+        .toggle-switch input:checked + .switch-body { background-color: var(--income-color); }
+        .toggle-switch input:checked + .switch-body .thumb { transform: translateX(100%); }
+        .toggle-switch input:checked + .switch-body .toggle-label.debit { color: rgba(255,255,255,0.5); }
+        .toggle-switch input:checked + .switch-body .toggle-label.credit { color: #fff; }
 
         .list { list-style-type: none; padding: 0; margin-bottom: 0; }
         .list li {
@@ -363,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GSAP PAGE LOAD ANIMATION ---
     gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
-    gsap.from('.container > *', { duration: 0.8, y: 30, opacity: 0, stagger: 0.1, delay: 0.5 });
+    gsap.from('#tracker.active > *', { duration: 0.8, y: 30, opacity: 0, stagger: 0.1, delay: 0.5 });
 
     // --- DOM ELEMENTS & APP STATE ---
     const balance = document.getElementById('balance');
@@ -379,6 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const pages = document.querySelectorAll('.page');
 
+    // **FIX**: Get computed styles for Chart.js, as it can't parse CSS variables
+    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
+    const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
+
     const localStorageTransactions = JSON.parse(localStorage.getItem('transactions'));
     let transactions = localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
     let categoryChartInstance = null;
@@ -389,20 +383,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const pageId = btn.dataset.page;
             navButtons.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            pages.forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            if(pageId === 'dashboard') renderDashboard();
+            
+            pages.forEach(p => {
+                if (p.id === pageId) {
+                    p.classList.add('active');
+                    // Animate new page content
+                    gsap.from(`#${pageId}.active > *`, { duration: 0.5, y: 30, opacity: 0, stagger: 0.1 });
+                } else {
+                    p.classList.remove('active');
+                }
+            });
+            
+            if(pageId === 'dashboard') {
+                renderDashboard();
+            }
         });
     });
 
-    // --- NEW: DYNAMIC UI UPDATE FOR TOGGLE SWITCH ---
+    // --- DYNAMIC UI UPDATE FOR TOGGLE SWITCH ---
     function updateToggleUI() {
         if (transactionType.checked) { // Credit (Income)
             amount.placeholder = "Enter income amount...";
-            category.value = "Salary"; // Default to a common income category
+            category.value = "Salary";
         } else { // Debit (Expense)
             amount.placeholder = "Enter expense amount...";
-            category.value = "Groceries"; // Default to a common expense category
+            category.value = "Groceries";
         }
     }
     transactionType.addEventListener('change', updateToggleUI);
@@ -435,7 +440,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         text.value = '';
         amount.value = '';
-        // Reset toggle to default (Debit) for next entry
         transactionType.checked = false;
         updateToggleUI();
     }
@@ -447,13 +451,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const item = document.createElement('li');
         item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
         
+        // **FIX**: Pass 'event' to the removeTransaction function
         item.innerHTML = `
             <div class="details">
                 ${transaction.text}
                 <span class="category">${transaction.category}</span>
             </div>
             <span>${sign}${formatMoney(Math.abs(transaction.amount))}</span>
-            <button class="delete-btn" onclick="removeTransaction(${transaction.id})">x</button>
+            <button class="delete-btn" onclick="removeTransaction(event, ${transaction.id})">x</button>
         `;
         list.appendChild(item);
         
@@ -475,7 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
 
-    window.removeTransaction = function(id) {
+    // **FIX**: Accept 'event' as the first parameter
+    window.removeTransaction = function(event, id) {
         const transactionEl = event.target.parentElement;
         gsap.to(transactionEl, { 
             duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
@@ -495,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         list.innerHTML = '';
         transactions.forEach(addTransactionDOM);
         updateValues();
-        updateToggleUI(); // Set initial placeholder and category
+        updateToggleUI(); 
     }
     
     // --- DASHBOARD LOGIC ---
@@ -521,9 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         progressCircle.style.strokeDasharray = circumference;
         
-        gsap.to(progressCircle, {
-            strokeDashoffset: offset, duration: 1.5, ease: 'power3.out'
-        });
+        gsap.to(progressCircle, { strokeDashoffset: offset, duration: 1.5, ease: 'power3.out' });
 
         let animatedValue = { val: parseFloat(percentageElem.innerText) || 0 };
         gsap.to(animatedValue, {
@@ -554,15 +558,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Spending', data: data,
                     backgroundColor: ['rgba(233, 69, 96, 0.7)', 'rgba(22, 33, 62, 0.7)', 'rgba(15, 52, 96, 0.7)', 'rgba(46, 204, 113, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)', 'rgba(241, 196, 15, 0.7)'],
-                    borderColor: var(--border-color), borderWidth: 1, borderRadius: 5,
+                    borderColor: chartBorderColor, borderWidth: 1, borderRadius: 5,
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: true,
                 plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => formatMoney(context.raw) } } },
                 scales: {
-                    y: { beginAtZero: true, ticks: { color: var(--text-color), font: { family: "'Poppins', sans-serif" } }, grid: { color: var(--border-color) } },
-                    x: { ticks: { color: var(--text-color), font: { family: "'Poppins', sans-serif" } }, grid: { color: 'transparent' } }
+                    // **FIX**: Use JS variables for colors
+                    y: { beginAtZero: true, ticks: { color: chartTextColor, font: { family: "'Poppins', sans-serif" } }, grid: { color: chartBorderColor } },
+                    x: { ticks: { color: chartTextColor, font: { family: "'Poppins', sans-serif" } }, grid: { color: 'transparent' } }
                 }
             }
         });
