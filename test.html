@@ -584,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- PDF REPORT GENERATION (FIXED & ROBUST) ---
+    // --- PDF REPORT GENERATION (CORRECTED & FULLY WORKING) ---
     function generatePDF() {
         // ROBUSTNESS CHECK: Ensure both jsPDF and the autoTable plugin are loaded.
         if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
@@ -596,22 +596,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // 1. Show the loading overlay
+        const dataToReport = getFilteredTransactions();
+
+        // Check for data BEFORE showing the loader
+        if (dataToReport.length === 0) {
+            alert('No transactions found for the selected filters. Cannot generate a report.');
+            return; // Exit the function entirely.
+        }
+
+        // Show the loading overlay only if there is data to process.
         loadingOverlay.style.display = 'flex';
         
-        // 2. Set a timeout to allow the loading spinner to render and simulate generation
+        // Use a short timeout. This allows the browser to render the loading overlay
+        // before starting the potentially blocking PDF generation work.
         setTimeout(() => {
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                const dataToReport = getFilteredTransactions();
-                if (dataToReport.length === 0) {
-                    alert('No transactions to report for the selected filters.');
-                    // The 'finally' block will still hide the loader
-                    return;
-                }
-
                 const filterType = filterControl.options[filterControl.selectedIndex].text;
                 const startDate = startDateInput.value || 'Start';
                 const endDate = endDateInput.value || 'End';
@@ -681,17 +683,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
+                // --- Initiate download ---
                 const date = new Date().toISOString().slice(0, 10);
                 doc.save(`budget-report-${date}.pdf`);
+
+                // Hide the loader AFTER the save command is issued
+                loadingOverlay.style.display = 'none';
 
             } catch(error) {
                 console.error("Failed to generate PDF:", error);
                 alert("Sorry, there was an unexpected error while generating the report. Please check the console for details.");
-            } finally {
-                // 3. Hide the loading overlay after the process is complete (or fails)
+                // Ensure loader is hidden on error too
                 loadingOverlay.style.display = 'none';
             }
-        }, 500); // 500ms delay to ensure spinner is shown
+        }, 250); // A 250ms delay is enough for the UI to update.
     }
 
 
