@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
     <!-- CDN for Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -18,6 +21,11 @@
     <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <style>
         :root {
@@ -41,8 +49,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Align to top */
-            padding-top: 20px;
+            justify-content: center;
+            padding: 20px 0;
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -50,12 +58,12 @@
         #three-canvas {
             position: fixed; top: 0; left: 0; z-index: -1;
         }
-
-        .app-wrapper {
-            width: 95%;
-            max-width: 500px;
-            z-index: 1;
+        
+        /* General Wrappers */
+        .auth-wrapper, .app-wrapper {
+             width: 95%; max-width: 500px; z-index: 1;
         }
+        .app-wrapper { display: none; /* Hidden by default */ }
 
         .container {
             background: var(--glass-bg);
@@ -67,10 +75,34 @@
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
             margin-top: 15px;
         }
+        
+        /* Auth Page Styles */
+        .auth-page { display: none; }
+        .auth-page.active { display: block; }
+        .auth-page h1 { margin-bottom: 25px; }
+        .auth-page .form-control { margin-bottom: 15px; }
+        .auth-link {
+            display: block; text-align: center; margin-top: 20px;
+            color: var(--text-color); text-decoration: none;
+            opacity: 0.8; transition: opacity 0.3s;
+        }
+        .auth-link:hover { opacity: 1; }
+        .auth-error {
+            color: var(--accent-color); background: rgba(233, 69, 96, 0.1);
+            padding: 10px; border-radius: 8px; font-size: 14px;
+            text-align: center; margin-bottom: 15px; border: 1px solid var(--accent-color);
+            display: none; /* Hidden by default */
+        }
+        .auth-success {
+            color: var(--income-color); background: rgba(46, 204, 113, 0.1);
+            padding: 10px; border-radius: 8px; font-size: 14px;
+            text-align: center; margin-bottom: 15px; border: 1px solid var(--income-color);
+            display: none; /* Hidden by default */
+        }
 
         /* Navigation */
         .nav {
-            display: flex; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 5px;
+            display: flex; background: rgba(0,0,0,0.2); border-radius: 15px; padding: 5px; gap: 5px;
         }
         .nav-btn {
             flex: 1; padding: 10px; background: transparent; border: none; color: var(--text-color);
@@ -79,6 +111,10 @@
         }
         .nav-btn.active {
             background-color: var(--accent-color); color: #fff; box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
+        }
+        .logout-btn {
+            flex: 0 1 auto;
+            background-color: var(--secondary-color);
         }
         
         .page { display: none; }
@@ -104,7 +140,7 @@
         h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin: 30px 0 15px; font-weight: 600; }
         label { display: block; margin: 10px 0; font-weight: 400; }
         
-        input[type='text'], input[type='number'], select, input[type='date'] {
+        input[type='text'], input[type='number'], input[type='email'], input[type='password'], select, input[type='date'] {
             border: 1px solid var(--border-color); border-radius: 8px; display: block; font-size: 16px;
             padding: 12px; width: 100%; background: rgba(0, 0, 0, 0.2); color: var(--text-color);
             font-family: 'Poppins', sans-serif;
@@ -119,46 +155,27 @@
             border: 0; color: #fff; display: block; font-size: 16px; margin: 20px 0;
             padding: 12px; width: 100%; border-radius: 8px; font-weight: 600;
             transition: background-color 0.3s ease, transform 0.2s ease;
+            display: inline-flex; justify-content: center; align-items: center; gap: 8px;
         }
         .btn:hover { background-color: #d63031; transform: scale(1.02); }
         .btn:focus, input:focus, select:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-color); }
 
-        /* --- History Controls & Reports (Single Line, Non-Scrollable) --- */
+        /* History Controls & Reports */
         .history-controls {
             margin-top: 30px; border-bottom: 1px solid var(--border-color);
             padding-bottom: 15px; margin-bottom: 15px;
         }
         .history-controls h3 { border-bottom: none; margin: 0 0 15px 0; }
         
-        .filter-controls-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .filter-container {
-            flex: 1; /* Make items flexible to fit the line */
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        .filter-container label {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 400;
-            white-space: nowrap;
-        }
-        .filter-container select, .filter-container input[type="date"] {
-            padding: 8px; 
-            width: 100%; 
-            font-size: 14px;
-        }
+        .filter-controls-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .filter-container { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .filter-container label { margin: 0; font-size: 14px; font-weight: 400; white-space: nowrap; }
+        .filter-container select, .filter-container input[type="date"] { padding: 8px; width: 100%; font-size: 14px; }
         .report-btn {
             cursor: pointer; background-color: var(--secondary-color); border: 0; color: #fff;
             display: block; font-size: 16px; padding: 12px; border-radius: 8px;
-            width: 100%;
-            margin-top: 10px; /* Space above the button */
-            font-weight: 600; transition: background-color 0.3s ease;
+            width: 100%; margin-top: 10px; font-weight: 600; transition: background-color 0.3s ease;
+            display: inline-flex; justify-content: center; align-items: center; gap: 8px;
         }
         .report-btn:hover { background-color: var(--accent-color); }
 
@@ -169,18 +186,33 @@
             justify-content: space-between; align-items: center; position: relative;
             padding: 12px; margin: 10px 0; border-radius: 8px; border-right: 5px solid;
             transition: opacity 0.3s ease;
+            cursor: pointer;
         }
         .list li.plus { border-color: var(--income-color); }
         .list li.minus { border-color: var(--expense-color); }
-        .list li .details { display: flex; flex-direction: column; flex-grow: 1; margin: 0 10px; }
+        .list li .details { display: flex; flex-direction: column; flex-grow: 1; margin: 0 10px; pointer-events: none; }
         .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; margin-top: 4px; }
-        .delete-btn {
-            cursor: pointer; background-color: var(--accent-color); border: 0; color: #fff;
-            font-size: 18px; line-height: 20px; padding: 5px 8px; border-radius: 5px;
-            position: absolute; top: 50%; left: 0; transform: translate(-100%, -50%);
+        
+        /* --- NEW: Action Buttons --- */
+        .transaction-actions {
+            display: flex; gap: 8px; position: absolute;
+            top: 50%; left: 0; transform: translate(-100%, -50%);
             opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
         }
-        .list li:hover .delete-btn { opacity: 1; transform: translate(-120%, -50%); }
+        .list li.show-actions .transaction-actions {
+            opacity: 1; transform: translate(-115%, -50%);
+            pointer-events: auto;
+        }
+        .edit-btn, .delete-btn {
+            cursor: pointer; border: 0; color: #fff; font-size: 16px;
+            line-height: 20px; padding: 6px 10px; border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .edit-btn { background-color: var(--secondary-color); }
+        .edit-btn:hover { background-color: #1a2b4b; }
+        .delete-btn { background-color: var(--accent-color); }
+        .delete-btn:hover { background-color: #d63031; }
         
         /* Modal Popup Styles */
         .modal-container {
@@ -203,6 +235,7 @@
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideIn { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         #form .btn { margin-top: 20px; margin-bottom: 0; }
+        #form #form-title { border-bottom: none; margin: 0 0 15px 0; }
 
         /* Animated Toggle Switch */
         .type-toggle { margin: 25px 0; }
@@ -232,57 +265,40 @@
         
         /* --- Loading Animation --- */
         .loading-overlay {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
             background-color: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             display: none; /* Hidden by default */
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            gap: 20px;
-            z-index: 2000;
-            color: var(--text-color);
+            justify-content: center; align-items: center; flex-direction: column;
+            gap: 20px; z-index: 2000; color: var(--text-color);
         }
         .spinner {
-            width: 50px;
-            height: 50px;
+            width: 50px; height: 50px;
             border: 5px solid rgba(255, 255, 255, 0.3);
             border-top-color: var(--accent-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-        .loading-overlay p {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        .loading-overlay p { font-size: 1.1rem; font-weight: 600; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Responsive Media Queries */
         @media (max-width: 550px) {
-            .app-wrapper { width: 100%; }
-            .container { border-radius: 0; min-height: calc(100vh - 80px); padding: 15px; }
+            .auth-wrapper, .app-wrapper { width: 100%; }
+            .container { border-radius: 0; min-height: calc(100vh - 20px); padding: 20px 15px; }
             .nav { border-radius: 0; }
-            body { font-size: 14px; }
-
+            body { font-size: 14px; padding: 0; justify-content: flex-start; }
             h1 { font-size: 1.5rem; }
             h3 { font-size: 1.1rem; margin: 20px 0 10px; }
             h4 { font-size: 0.9rem; }
-
             #balance { font-size: 2.1rem; margin-bottom: 20px; }
             .money { font-size: 1.3rem; }
-            
             .summary-container { padding: 15px; margin: 15px 0; }
-
             .btn, .nav-btn, input, select, textarea { font-size: 14px; }
-            
             .list li { padding: 10px; }
             .list li .details { font-size: 0.9rem; }
-
             .overview-text .percentage { font-size: 2rem; }
             .overview-text .label { font-size: 0.9rem; }
         }
@@ -292,10 +308,67 @@
     
     <canvas id="three-canvas"></canvas>
 
+    <!-- AUTHENTICATION WRAPPER -->
+    <div class="auth-wrapper">
+        <!-- LOGIN PAGE -->
+        <div id="login-page" class="auth-page active container">
+            <h1>Login</h1>
+            <form id="login-form">
+                <div id="login-error" class="auth-error"></div>
+                <div class="form-control">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="Enter your email">
+                </div>
+                <div class="form-control">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+            </form>
+            <a href="#" class="auth-link" data-page="forgot-password-page">Forgot Password?</a>
+            <a href="#" class="auth-link" data-page="signup-page">Don't have an account? <strong>Sign Up</strong></a>
+        </div>
+        <!-- SIGNUP PAGE -->
+        <div id="signup-page" class="auth-page container">
+            <h1>Sign Up</h1>
+            <form id="signup-form">
+                <div id="signup-error" class="auth-error"></div>
+                <div class="form-control">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" required placeholder="Enter your email">
+                </div>
+                <div class="form-control">
+                    <label for="signup-password">Password (min. 6 characters)</label>
+                    <input type="password" id="signup-password" required placeholder="Create a password">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-user-plus"></i> Create Account</button>
+            </form>
+            <a href="#" class="auth-link" data-page="login-page">Already have an account? <strong>Login</strong></a>
+        </div>
+        <!-- FORGOT PASSWORD PAGE -->
+        <div id="forgot-password-page" class="auth-page container">
+            <h1>Reset Password</h1>
+            <form id="forgot-password-form">
+                <div id="forgot-password-error" class="auth-error"></div>
+                <div id="forgot-password-success" class="auth-success"></div>
+                <p style="margin-bottom: 20px; opacity: 0.9;">Enter your email address and we will send you a link to reset your password.</p>
+                <div class="form-control">
+                    <label for="forgot-password-email">Email</label>
+                    <input type="email" id="forgot-password-email" required placeholder="Enter your registered email">
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-paper-plane"></i> Send Reset Link</button>
+            </form>
+            <a href="#" class="auth-link" data-page="login-page">Back to <strong>Login</strong></a>
+        </div>
+    </div>
+
+
+    <!-- MAIN APPLICATION WRAPPER -->
     <div class="app-wrapper">
         <nav class="nav">
             <button class="nav-btn active" data-page="tracker">Tracker</button>
             <button class="nav-btn" data-page="dashboard">Dashboard</button>
+            <button class="nav-btn logout-btn" id="logout-btn" title="Logout"><i class="fas fa-sign-out-alt"></i></button>
         </nav>
         
         <div id="tracker" class="page active container">
@@ -313,7 +386,7 @@
                 </div>
             </div>
             
-            <button id="open-add-transaction-btn" class="btn">Add New Transaction</button>
+            <button id="open-add-transaction-btn" class="btn"><i class="fas fa-plus-circle"></i> Add New Transaction</button>
             
             <div class="history-controls">
                 <h3>History</h3>
@@ -335,7 +408,7 @@
                         <input type="date" id="end-date">
                     </div>
                 </div>
-                <button id="download-report-btn" class="report-btn">Download PDF Report</button>
+                <button id="download-report-btn" class="report-btn"><i class="fas fa-file-pdf"></i> Download PDF Report</button>
             </div>
             <ul id="list" class="list"></ul>
         </div>
@@ -370,11 +443,11 @@
         </div>
     </div>
 
-    <!-- Add Transaction Modal -->
-    <div id="add-transaction-modal" class="modal-container">
+    <!-- Transaction Modal (Add & Edit) -->
+    <div id="transaction-modal" class="modal-container">
         <div class="modal-content container">
             <button class="close-modal-btn">×</button>
-            <h3>Add New Transaction</h3>
+            <h3 id="form-title">Add New Transaction</h3>
             <form id="form">
                 <div class="type-toggle">
                     <label>Transaction Type</label>
@@ -389,7 +462,7 @@
                 </div>
                 <div class="form-control">
                     <label for="text">Description</label>
-                    <input type="text" id="text" placeholder="e.g., Groceries" autocomplete="off"/>
+                    <input type="text" id="text" placeholder="e.g., Groceries" autocomplete="off" required/>
                 </div>
                 <div class="form-control">
                     <label for="category">Category</label>
@@ -405,21 +478,87 @@
                 </div>
                 <div class="form-control">
                     <label for="amount">Amount</label>
-                    <input type="number" id="amount" placeholder="Enter expense amount..." autocomplete="off" min="0" step="0.01"/>
+                    <input type="number" id="amount" placeholder="Enter amount..." autocomplete="off" min="0.01" step="0.01" required/>
                 </div>
-                <button class="btn">Add Transaction</button>
+                <!-- NEW: Date Input -->
+                <div class="form-control">
+                    <label for="transaction-date">Date</label>
+                    <input type="date" id="transaction-date" required>
+                </div>
+                <button id="form-submit-btn" class="btn"><i class="fas fa-check-circle"></i> Add Transaction</button>
             </form>
         </div>
     </div>
 
-    <!-- Loading Overlay for PDF Generation -->
+    <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="spinner"></div>
-        <p>Generating Report...</p>
+        <p id="loading-text">Loading...</p>
     </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+
+    // --- FIREBASE SETUP ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCPTlKkV5PK1XjwMtxuNrowmP4Qt3py0sE",
+        authDomain: "login-8f29c.firebaseapp.com",
+        databaseURL: "https://login-8f29c-default-rtdb.firebaseio.com",
+        projectId: "login-8f29c",
+        storageBucket: "login-8f29c.firebasestorage.app",
+        messagingSenderId: "935493666066",
+        appId: "1:935493666066:web:baeeebb56ead2604241fcb",
+        measurementId: "G-R53KQHSL99"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // --- DOM ELEMENTS & APP STATE ---
+    // App Elements
+    const appWrapper = document.querySelector('.app-wrapper');
+    const balance = document.getElementById('balance'),
+          money_plus = document.getElementById('money-plus'),
+          money_minus = document.getElementById('money-minus'),
+          list = document.getElementById('list'),
+          form = document.getElementById('form'),
+          text = document.getElementById('text'),
+          amount = document.getElementById('amount'),
+          category = document.getElementById('category'),
+          transactionType = document.getElementById('transaction-type'),
+          transactionDateInput = document.getElementById('transaction-date'), // NEW
+          navButtons = document.querySelectorAll('.nav-btn'),
+          pages = document.querySelectorAll('.page'),
+          openAddTransactionBtn = document.getElementById('open-add-transaction-btn'),
+          transactionModal = document.getElementById('transaction-modal'), // RENAMED
+          closeModalBtn = transactionModal.querySelector('.close-modal-btn'),
+          formTitle = document.getElementById('form-title'), // NEW
+          formSubmitBtn = document.getElementById('form-submit-btn'), // NEW
+          filterControl = document.getElementById('filter-transactions'),
+          downloadReportBtn = document.getElementById('download-report-btn'),
+          startDateInput = document.getElementById('start-date'),
+          endDateInput = document.getElementById('end-date'),
+          loadingOverlay = document.getElementById('loading-overlay'),
+          loadingText = document.getElementById('loading-text'),
+          logoutBtn = document.getElementById('logout-btn');
+
+    // Auth Elements
+    const authWrapper = document.querySelector('.auth-wrapper');
+    const authPages = document.querySelectorAll('.auth-page');
+    const authLinks = document.querySelectorAll('.auth-link');
+    const loginForm = document.getElementById('login-form');
+    const signupForm = document.getElementById('signup-form');
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    
+    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
+    const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
+
+    let allTransactions = []; 
+    let currentUserId = null;
+    let dbListener = null; 
+    let categoryChartInstance = null;
 
     // --- 3D BACKGROUND ---
     function initThree() {
@@ -453,86 +592,161 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     initThree();
 
-    // --- DOM ELEMENTS & APP STATE ---
-    const balance = document.getElementById('balance'),
-          money_plus = document.getElementById('money-plus'),
-          money_minus = document.getElementById('money-minus'),
-          list = document.getElementById('list'),
-          form = document.getElementById('form'),
-          text = document.getElementById('text'),
-          amount = document.getElementById('amount'),
-          category = document.getElementById('category'),
-          transactionType = document.getElementById('transaction-type'),
-          navButtons = document.querySelectorAll('.nav-btn'),
-          pages = document.querySelectorAll('.page'),
-          openAddTransactionBtn = document.getElementById('open-add-transaction-btn'),
-          addTransactionModal = document.getElementById('add-transaction-modal'),
-          closeModalBtn = document.querySelector('.close-modal-btn'),
-          filterControl = document.getElementById('filter-transactions'),
-          downloadReportBtn = document.getElementById('download-report-btn'),
-          startDateInput = document.getElementById('start-date'),
-          endDateInput = document.getElementById('end-date'),
-          loadingOverlay = document.getElementById('loading-overlay');
+    // --- LOADING OVERLAY ---
+    function showLoading(message = 'Loading...') {
+        loadingText.textContent = message;
+        loadingOverlay.style.display = 'flex';
+    }
+    function hideLoading() {
+        loadingOverlay.style.display = 'none';
+    }
     
-    const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-color').trim();
-    const chartBorderColor = getComputedStyle(document.body).getPropertyValue('--border-color').trim();
-
-    let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
-    let categoryChartInstance = null;
-
-    // --- CORE LOGIC ---
-    function addTransaction(e) {
-        e.preventDefault();
-        const enteredAmount = +amount.value;
-        if (text.value.trim() === '' || amount.value.trim() === '' || enteredAmount <= 0) {
-            gsap.from(form, { x: -10, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-            alert('Please add a description and a valid positive amount.');
-            return;
+    // --- AUTHENTICATION LOGIC ---
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUserId = user.uid;
+            authWrapper.style.display = 'none';
+            appWrapper.style.display = 'block';
+            gsap.from('.app-wrapper', { duration: 0.7, y: -30, opacity: 0, ease: 'power3.out' });
+            initAppForUser(currentUserId);
+            hideLoading();
+        } else {
+            if (dbListener && currentUserId) {
+                db.ref('transactions/' + currentUserId).off('value', dbListener);
+            }
+            currentUserId = null;
+            allTransactions = [];
+            updateUI(); // Clear UI
+            appWrapper.style.display = 'none';
+            authWrapper.style.display = 'block';
+            showAuthPage('login-page');
+            hideLoading();
         }
+    });
+
+    function showAuthPage(pageId) {
+        authPages.forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        gsap.from(`#${pageId}`, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
+    }
+
+    authLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuthPage(link.dataset.page);
+        });
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        showLoading('Logging In...');
+        auth.signInWithEmailAndPassword(email, password)
+            .catch(error => {
+                document.getElementById('login-error').textContent = error.message;
+                document.getElementById('login-error').style.display = 'block';
+                hideLoading();
+            });
+    });
+
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        showLoading('Creating Account...');
+        auth.createUserWithEmailAndPassword(email, password)
+            .catch(error => {
+                document.getElementById('signup-error').textContent = error.message;
+                document.getElementById('signup-error').style.display = 'block';
+                hideLoading();
+            });
+    });
+    
+    forgotPasswordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('forgot-password-email').value;
+        showLoading('Sending Link...');
+        auth.sendPasswordResetEmail(email)
+            .then(() => {
+                document.getElementById('forgot-password-success').textContent = 'Password reset link sent! Check your email.';
+                document.getElementById('forgot-password-success').style.display = 'block';
+                document.getElementById('forgot-password-error').style.display = 'none';
+                hideLoading();
+            })
+            .catch(error => {
+                document.getElementById('forgot-password-error').textContent = error.message;
+                document.getElementById('forgot-password-error').style.display = 'block';
+                document.getElementById('forgot-password-success').style.display = 'none';
+                hideLoading();
+            });
+    });
+
+    logoutBtn.addEventListener('click', () => {
+        showLoading('Logging Out...');
+        auth.signOut();
+    });
+
+    // --- REALTIME DATABASE & APP LOGIC ---
+    function initAppForUser(userId) {
+        const userTransactionsRef = db.ref('transactions/' + userId);
+        if (dbListener) userTransactionsRef.off('value', dbListener);
+        dbListener = userTransactionsRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            allTransactions = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+            updateUI();
+        });
+    }
+
+    // --- FORM SUBMISSION (ADD/EDIT) ---
+    function handleFormSubmit(e) {
+        e.preventDefault();
+        if (!currentUserId) return;
         
-        const transaction = {
-            id: Date.now(),
-            date: new Date().toISOString(),
+        const mode = form.dataset.mode;
+        const transactionId = form.dataset.id;
+        const enteredAmount = +amount.value;
+
+        const transactionData = {
+            date: new Date(transactionDateInput.value).toISOString(),
             text: text.value,
             amount: transactionType.checked ? enteredAmount : -enteredAmount,
             category: category.value
         };
 
-        transactions.push(transaction);
-        updateUI();
+        if (mode === 'edit') {
+            // Update existing transaction
+            db.ref('transactions/' + currentUserId + '/' + transactionId).update(transactionData);
+        } else {
+            // Add new transaction
+            db.ref('transactions/' + currentUserId).push(transactionData);
+        }
         
-        text.value = '';
-        amount.value = '';
-        transactionType.checked = false;
-        updateToggleUI();
-        addTransactionModal.classList.remove('show');
+        transactionModal.classList.remove('show');
     }
 
     function removeTransaction(id) {
-        transactions = transactions.filter(t => t.id !== id);
-        updateUI();
+        if (!currentUserId) return;
+        db.ref('transactions/' + currentUserId + '/' + id).remove();
     }
-
+    
+    // --- LIST RENDERING AND FILTERING ---
     function getFilteredTransactions() {
         const filterValue = filterControl.value;
         const startDateValue = startDateInput.value;
         const endDateValue = endDateInput.value;
-
         let startDate = startDateValue ? new Date(startDateValue) : null;
         let endDate = endDateValue ? new Date(endDateValue) : null;
-
         if (startDate) startDate.setHours(0, 0, 0, 0);
         if (endDate) endDate.setHours(23, 59, 59, 999);
 
-        return transactions.filter(t => {
+        return allTransactions.filter(t => {
             const transactionDate = new Date(t.date);
             const typeMatch = (filterValue === 'all') || 
                               (filterValue === 'income' && t.amount > 0) || 
                               (filterValue === 'expense' && t.amount < 0);
-            
             const startDateMatch = !startDate || transactionDate >= startDate;
             const endDateMatch = !endDate || transactionDate <= endDate;
-            
             return typeMatch && startDateMatch && endDateMatch;
         });
     }
@@ -540,15 +754,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTransactionList() {
         list.innerHTML = '';
         const filteredTransactions = getFilteredTransactions();
-        
         filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         filteredTransactions.forEach(transaction => {
-            const sign = transaction.amount < 0 ? '-' : '+';
             const item = document.createElement('li');
             item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
+            item.dataset.id = transaction.id; // Set ID on the LI
             item.innerHTML = `
-                <button class="delete-btn" data-id="${transaction.id}">x</button>
+                <div class="transaction-actions">
+                    <button class="edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                </div>
                 <div class="details">
                     ${transaction.text}
                     <span class="category">${transaction.category} • ${formatDateTime(transaction.date)}</span>
@@ -559,9 +775,10 @@ document.addEventListener('DOMContentLoaded', () => {
             gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
         });
     }
-
+    
+    // --- UI UPDATES & CALCULATIONS ---
     function updateSummary() {
-        const amounts = transactions.map(t => t.amount);
+        const amounts = allTransactions.map(t => t.amount);
         const total = amounts.reduce((acc, item) => acc + item, 0);
         const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
         const expense = (amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0)) * -1;
@@ -571,54 +788,66 @@ document.addEventListener('DOMContentLoaded', () => {
         money_minus.innerText = `-${formatMoney(expense)}`;
     }
 
-    function updateLocalStorage() {
-        localStorage.setItem('transactions', JSON.stringify(transactions));
-    }
-
     function updateUI() {
         updateSummary();
         renderTransactionList();
-        updateLocalStorage();
         if (document.querySelector('#dashboard.active')) {
             renderDashboard();
         }
     }
+    
+    // --- MODAL HANDLING (ADD/EDIT) ---
+    function openModalForEdit(id) {
+        const transaction = allTransactions.find(t => t.id === id);
+        if (!transaction) return;
 
-    // --- PDF REPORT GENERATION (CORRECTED & FULLY WORKING) ---
+        form.dataset.mode = 'edit';
+        form.dataset.id = id;
+
+        formTitle.innerText = 'Edit Transaction';
+        formSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+
+        text.value = transaction.text;
+        category.value = transaction.category;
+        amount.value = Math.abs(transaction.amount);
+        transactionDateInput.value = transaction.date.split('T')[0]; // Format for date input
+        transactionType.checked = transaction.amount > 0;
+        
+        updateToggleUI();
+        transactionModal.classList.add('show');
+    }
+
+    function openModalForAdd() {
+        form.dataset.mode = 'add';
+        form.removeAttribute('data-id');
+
+        formTitle.innerText = 'Add New Transaction';
+        formSubmitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Add Transaction';
+
+        form.reset();
+        transactionDateInput.value = new Date().toISOString().split('T')[0]; // Default to today
+        
+        updateToggleUI();
+        transactionModal.classList.add('show');
+    }
+
+    // --- PDF REPORT GENERATION ---
     function generatePDF() {
-        // ROBUSTNESS CHECK: Ensure both jsPDF and the autoTable plugin are loaded.
-        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-            alert('Error: PDF library (jsPDF) not loaded. Please check your internet connection and try again.');
-            return;
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF.API.autoTable === 'undefined') {
+            alert('Error: PDF library not loaded. Please check your internet connection and try again.'); return;
         }
-        if (typeof window.jspdf.jsPDF.API.autoTable === 'undefined') {
-            alert('Error: PDF Table plugin (autoTable) not loaded. Please check your internet connection and try again.');
-            return;
-        }
-        
         const dataToReport = getFilteredTransactions();
-
-        // Check for data BEFORE showing the loader
         if (dataToReport.length === 0) {
-            alert('No transactions found for the selected filters. Cannot generate a report.');
-            return; // Exit the function entirely.
+            alert('No transactions found for the selected filters. Cannot generate a report.'); return;
         }
-
-        // Show the loading overlay only if there is data to process.
-        loadingOverlay.style.display = 'flex';
-        
-        // Use a short timeout. This allows the browser to render the loading overlay
-        // before starting the potentially blocking PDF generation work.
+        showLoading('Generating Report...');
         setTimeout(() => {
             try {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                
                 const filterType = filterControl.options[filterControl.selectedIndex].text;
                 const startDate = startDateInput.value || 'Start';
                 const endDate = endDateInput.value || 'End';
-
-                // --- PDF Header ---
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(20);
                 doc.text('Budget Transaction Report', 105, 20, { align: 'center' });
@@ -626,29 +855,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 doc.setFont('helvetica', 'normal');
                 doc.text(`Report Generated: ${new Date().toLocaleString('en-IN')}`, 105, 28, { align: 'center' });
                 doc.text(`Filters: ${filterType} transactions from ${startDate} to ${endDate}`, 105, 34, { align: 'center' });
-                
-                // --- PDF Summary ---
                 const amounts = dataToReport.map(t => t.amount);
                 const total = amounts.reduce((acc, item) => acc + item, 0);
                 const income = amounts.filter(item => item > 0).reduce((acc, item) => acc + item, 0);
                 const expense = Math.abs(amounts.filter(item => item < 0).reduce((acc, item) => acc + item, 0));
-                
                 doc.autoTable({
                     body: [
                         ['Filtered Income', `+${formatMoney(income)}`],
                         ['Filtered Expense', `-${formatMoney(expense)}`],
                         ['Net Result for Period', formatMoney(total)],
                     ],
-                    startY: 45,
-                    theme: 'grid',
-                    styles: { font: 'helvetica', fontStyle: 'bold' },
+                    startY: 45, theme: 'grid', styles: { font: 'helvetica', fontStyle: 'bold' },
                     columnStyles: { 1: { halign: 'right' } }
                 });
-
-                // --- PDF Main Table ---
                 const tableColumn = ["Date & Time", "Description", "Category", "Amount (INR)"];
                 const tableRows = [];
-
                 dataToReport.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
                     tableRows.push([
                         formatDateTime(t.date),
@@ -657,54 +878,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         { content: formatMoney(t.amount), styles: { halign: 'right' } }
                     ]);
                 });
-
                 doc.autoTable({
-                    head: [tableColumn],
-                    body: tableRows,
-                    startY: doc.lastAutoTable.finalY + 10,
-                    theme: 'striped',
-                    headStyles: { fillColor: [22, 33, 62] }, // Dark blue header
+                    head: [tableColumn], body: tableRows, startY: doc.lastAutoTable.finalY + 10,
+                    theme: 'striped', headStyles: { fillColor: [22, 33, 62] },
                     didParseCell: function (data) {
-                        // Color code amounts in the table
                         if (data.section === 'body' && data.column.index === 3) {
-                            if (data.cell.raw.content.includes('-')) {
-                                data.cell.styles.textColor = [192, 57, 43]; // Expense red
-                            } else {
-                                data.cell.styles.textColor = [46, 204, 113]; // Income green
-                            }
+                            if (data.cell.raw.content.includes('-')) { data.cell.styles.textColor = [192, 57, 43]; } 
+                            else { data.cell.styles.textColor = [46, 204, 113]; }
                             data.cell.styles.fontStyle = 'bold';
                         }
                     },
                     didDrawPage: function (data) {
-                        // --- PDF Footer on each page (THIS IS THE FIX) ---
                         const pageCount = doc.internal.getNumberOfPages();
                         doc.setFontSize(10);
-                        // Use 'data.pageNumber' provided by autoTable
                         doc.text('Page ' + data.pageNumber + ' of ' + pageCount, data.settings.margin.left, doc.internal.pageSize.height - 10);
                     }
                 });
-                
-                // --- Initiate download ---
                 const date = new Date().toISOString().slice(0, 10);
                 doc.save(`budget-report-${date}.pdf`);
-
-                // Hide the loader AFTER the save command is issued
-                loadingOverlay.style.display = 'none';
-
+                hideLoading();
             } catch(error) {
                 console.error("Failed to generate PDF:", error);
-                alert("Sorry, there was an unexpected error while generating the report. Please check the console for details.");
-                // Ensure loader is hidden on error too
-                loadingOverlay.style.display = 'none';
+                alert("Sorry, there was an unexpected error while generating the report.");
+                hideLoading();
             }
         }, 250); 
     }
 
-
     // --- DASHBOARD ---
     function renderDashboard() {
-        const totalIncome = transactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
-        const totalExpense = Math.abs(transactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0));
+        const totalIncome = allTransactions.filter(t => t.amount > 0).reduce((acc, t) => acc + t.amount, 0);
+        const totalExpense = Math.abs(allTransactions.filter(t => t.amount < 0).reduce((acc, t) => acc + t.amount, 0));
         renderBudgetOverview(totalIncome, totalExpense);
         renderCategoryChart();
     }
@@ -716,10 +920,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const circumference = 2 * Math.PI * radius;
         let percentage = (income > 0) ? Math.min((expense / income) * 100, 100) : 0;
         const offset = circumference - (percentage / 100) * circumference;
-        
         progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
         gsap.to(progressCircle, { strokeDashoffset: offset, duration: 1.5, ease: 'power3.out' });
-
         let animatedValue = { val: parseFloat(percentageElem.innerText.replace('%', '')) || 0 };
         gsap.to(animatedValue, {
             val: percentage, duration: 1.5, ease: 'power3.out',
@@ -729,12 +931,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCategoryChart() {
         if (categoryChartInstance) categoryChartInstance.destroy();
-        const expenseTransactions = transactions.filter(t => t.amount < 0);
+        const expenseTransactions = allTransactions.filter(t => t.amount < 0);
         const spendingByCategory = expenseTransactions.reduce((acc, t) => {
             acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
             return acc;
         }, {});
-        
         const ctx = document.getElementById('category-chart').getContext('2d');
         categoryChartInstance = new Chart(ctx, {
             type: 'bar',
@@ -757,53 +958,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- HELPERS & UI BINDING ---
+    // --- HELPERS & EVENT LISTENERS ---
     function formatMoney(number) {
         const sign = number < 0 ? "- " : "";
-        const absNumber = Math.abs(number);
-        const formattedNumber = absNumber.toLocaleString('en-IN', { 
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2 
-        });
-        return `${sign}Rs. ${formattedNumber}`;
+        return `${sign}Rs. ${Math.abs(number).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
-
     function formatDateTime(isoString) {
-        const date = new Date(isoString);
-        return date.toLocaleString('en-IN', {
-            day: '2-digit', month: 'short', year: 'numeric',
-            hour: 'numeric', minute: 'numeric', hour12: true
+        return new Date(isoString).toLocaleString('en-IN', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true
         }).replace(/,/g, '');
     }
-
     function updateToggleUI() {
         if (transactionType.checked) {
-            amount.placeholder = "Enter income amount...";
-            category.value = "Salary";
+            amount.placeholder = "Enter income amount..."; category.value = "Salary";
         } else {
-            amount.placeholder = "Enter expense amount...";
-            category.value = "Groceries";
+            amount.placeholder = "Enter expense amount..."; category.value = "Groceries";
         }
     }
 
+    // --- MASTER CLICK LISTENER FOR TRANSACTION LIST ---
     list.addEventListener('click', event => {
-        if (event.target.classList.contains('delete-btn')) {
-            const id = parseInt(event.target.dataset.id);
-            const itemToRemove = event.target.closest('li');
-            gsap.to(itemToRemove, {
-                duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
-                onComplete: () => { removeTransaction(id); }
-            });
+        const listItem = event.target.closest('li');
+        if (!listItem) return;
+
+        const transactionId = listItem.dataset.id;
+        
+        // Handle Delete Button Click
+        if (event.target.closest('.delete-btn')) {
+            if (confirm('Are you sure you want to delete this transaction?')) {
+                gsap.to(listItem, {
+                    duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
+                    onComplete: () => removeTransaction(transactionId)
+                });
+            }
+            return;
+        }
+
+        // Handle Edit Button Click
+        if (event.target.closest('.edit-btn')) {
+            openModalForEdit(transactionId);
+            return;
+        }
+
+        // Handle Toggling Action Buttons on the LI itself
+        const isShowing = listItem.classList.contains('show-actions');
+        document.querySelectorAll('#list li.show-actions').forEach(li => li.classList.remove('show-actions'));
+        if (!isShowing) {
+            listItem.classList.add('show-actions');
         }
     });
 
     navButtons.forEach(btn => {
+        if (btn.id === 'logout-btn') return;
         btn.addEventListener('click', () => {
             const pageId = btn.dataset.page;
-            navButtons.forEach(b => b.classList.remove('active'));
+            navButtons.forEach(b => { if (b.id !== 'logout-btn') b.classList.remove('active'); });
             btn.classList.add('active');
             pages.forEach(p => p.classList.toggle('active', p.id === pageId));
-            
             if (pageId === 'dashboard') {
                 gsap.from('#dashboard.active > *', { duration: 0.5, y: 30, opacity: 0, stagger: 0.1 });
                 renderDashboard();
@@ -811,25 +1022,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // --- INITIALIZATION & EVENT LISTENERS ---
-    form.addEventListener('submit', addTransaction);
+    // --- INITIALIZATION & OTHER EVENT LISTENERS ---
+    form.addEventListener('submit', handleFormSubmit);
     transactionType.addEventListener('change', updateToggleUI);
-    
-    openAddTransactionBtn.addEventListener('click', () => addTransactionModal.classList.add('show'));
-    closeModalBtn.addEventListener('click', () => addTransactionModal.classList.remove('show'));
+    openAddTransactionBtn.addEventListener('click', openModalForAdd);
+    closeModalBtn.addEventListener('click', () => transactionModal.classList.remove('show'));
     window.addEventListener('click', e => {
-        if (e.target === addTransactionModal) {
-            addTransactionModal.classList.remove('show');
-        }
+        if (e.target === transactionModal) transactionModal.classList.remove('show');
     });
-    
     filterControl.addEventListener('change', renderTransactionList);
     startDateInput.addEventListener('change', renderTransactionList);
     endDateInput.addEventListener('change', renderTransactionList);
     downloadReportBtn.addEventListener('click', generatePDF);
     
-    gsap.from('.app-wrapper', { duration: 1, y: -50, opacity: 0, ease: 'power3.out' });
-    updateUI();
     updateToggleUI();
 });
 </script>
