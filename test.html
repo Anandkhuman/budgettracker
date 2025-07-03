@@ -179,40 +179,81 @@
         }
         .report-btn:hover { background-color: var(--accent-color); }
 
-        /* Transaction List */
+        /* --- NEW/UPDATED: Transaction List Styles --- */
         .list { list-style-type: none; padding: 0; margin-bottom: 0; }
         .list li {
-            background-color: rgba(0, 0, 0, 0.2); color: var(--text-color); display: flex;
-            justify-content: space-between; align-items: center; position: relative;
-            padding: 12px; margin: 10px 0; border-radius: 8px; border-right: 5px solid;
-            transition: opacity 0.3s ease;
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+            margin: 10px 0;
+            border-radius: 8px;
+            overflow: hidden; /* Important for the slide down effect */
+            transition: box-shadow 0.3s ease;
+        }
+        .list li:hover {
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        .transaction-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-right: 5px solid;
             cursor: pointer;
         }
-        .list li.plus { border-color: var(--income-color); }
-        .list li.minus { border-color: var(--expense-color); }
-        .list li .details { display: flex; flex-direction: column; flex-grow: 1; margin: 0 10px; pointer-events: none; }
-        .list li .category { font-size: 0.8em; color: #aaa; font-style: italic; margin-top: 4px; }
-        
-        /* --- NEW: Action Buttons --- */
+        .list li.plus .transaction-main { border-color: var(--income-color); }
+        .list li.minus .transaction-main { border-color: var(--expense-color); }
+        .transaction-main .details {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            margin: 0 10px;
+        }
+        .transaction-main .category {
+            font-size: 0.8em;
+            color: #aaa;
+            font-style: italic;
+            margin-top: 4px;
+        }
         .transaction-actions {
-            display: flex; gap: 8px; position: absolute;
-            top: 50%; left: 0; transform: translate(-100%, -50%);
-            opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
-            pointer-events: none;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding: 10px 15px;
+            max-height: 0; /* Hidden by default */
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, opacity 0.4s ease-out, padding 0.4s ease-out;
         }
         .list li.show-actions .transaction-actions {
-            opacity: 1; transform: translate(-115%, -50%);
-            pointer-events: auto;
+            max-height: 80px; /* Reveal */
+            opacity: 1;
+            padding: 10px 15px;
         }
-        .edit-btn, .delete-btn {
-            cursor: pointer; border: 0; color: #fff; font-size: 16px;
-            line-height: 20px; padding: 6px 10px; border-radius: 5px;
-            transition: background-color 0.3s;
+        .btn-action {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s, color 0.3s;
         }
-        .edit-btn { background-color: var(--secondary-color); }
-        .edit-btn:hover { background-color: #1a2b4b; }
-        .delete-btn { background-color: var(--accent-color); }
-        .delete-btn:hover { background-color: #d63031; }
+        .btn-action.edit-btn:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        .btn-action.delete-btn:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #fff;
+        }
         
         /* Modal Popup Styles */
         .modal-container {
@@ -297,8 +338,9 @@
             .money { font-size: 1.3rem; }
             .summary-container { padding: 15px; margin: 15px 0; }
             .btn, .nav-btn, input, select, textarea { font-size: 14px; }
-            .list li { padding: 10px; }
-            .list li .details { font-size: 0.9rem; }
+            .list li { padding: 0; } /* Adjusted for new structure */
+            .transaction-main { padding: 10px; }
+            .transaction-main .details { font-size: 0.9rem; }
             .overview-text .percentage { font-size: 2rem; }
             .overview-text .label { font-size: 0.9rem; }
         }
@@ -480,7 +522,6 @@
                     <label for="amount">Amount</label>
                     <input type="number" id="amount" placeholder="Enter amount..." autocomplete="off" min="0.01" step="0.01" required/>
                 </div>
-                <!-- NEW: Date Input -->
                 <div class="form-control">
                     <label for="transaction-date">Date</label>
                     <input type="date" id="transaction-date" required>
@@ -528,14 +569,14 @@ document.addEventListener('DOMContentLoaded', () => {
           amount = document.getElementById('amount'),
           category = document.getElementById('category'),
           transactionType = document.getElementById('transaction-type'),
-          transactionDateInput = document.getElementById('transaction-date'), // NEW
+          transactionDateInput = document.getElementById('transaction-date'), 
           navButtons = document.querySelectorAll('.nav-btn'),
           pages = document.querySelectorAll('.page'),
           openAddTransactionBtn = document.getElementById('open-add-transaction-btn'),
-          transactionModal = document.getElementById('transaction-modal'), // RENAMED
+          transactionModal = document.getElementById('transaction-modal'), 
           closeModalBtn = transactionModal.querySelector('.close-modal-btn'),
-          formTitle = document.getElementById('form-title'), // NEW
-          formSubmitBtn = document.getElementById('form-submit-btn'), // NEW
+          formTitle = document.getElementById('form-title'), 
+          formSubmitBtn = document.getElementById('form-submit-btn'), 
           filterControl = document.getElementById('filter-transactions'),
           downloadReportBtn = document.getElementById('download-report-btn'),
           startDateInput = document.getElementById('start-date'),
@@ -715,10 +756,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if (mode === 'edit') {
-            // Update existing transaction
             db.ref('transactions/' + currentUserId + '/' + transactionId).update(transactionData);
         } else {
-            // Add new transaction
             db.ref('transactions/' + currentUserId).push(transactionData);
         }
         
@@ -761,18 +800,21 @@ document.addEventListener('DOMContentLoaded', () => {
             item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
             item.dataset.id = transaction.id; // Set ID on the LI
             item.innerHTML = `
+                <div class="transaction-main">
+                    <div class="details">
+                        ${transaction.text}
+                        <span class="category">${transaction.category} • ${formatDateTime(transaction.date)}</span>
+                    </div>
+                    <span>${formatMoney(transaction.amount)}</span>
+                </div>
                 <div class="transaction-actions">
-                    <button class="edit-btn" title="Edit"><i class="fas fa-edit"></i></button>
-                    <button class="delete-btn" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                    <button class="btn-action edit-btn" title="Edit"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-action delete-btn" title="Delete"><i class="fas fa-trash-alt"></i> Delete</button>
                 </div>
-                <div class="details">
-                    ${transaction.text}
-                    <span class="category">${transaction.category} • ${formatDateTime(transaction.date)}</span>
-                </div>
-                <span>${formatMoney(transaction.amount)}</span>
             `;
             list.appendChild(item);
-            gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
+            // Don't animate on initial render to avoid flashes on filter change
+            // gsap.from(item, { duration: 0.5, opacity: 0, y: 20, ease: 'power2.out' });
         });
     }
     
@@ -789,8 +831,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateUI() {
+        const currentlyOpen = list.querySelector('.show-actions');
+        const openId = currentlyOpen ? currentlyOpen.dataset.id : null;
+
         updateSummary();
         renderTransactionList();
+
+        // Re-open the item that was open before the re-render
+        if (openId) {
+            const itemToReopen = list.querySelector(`li[data-id="${openId}"]`);
+            if (itemToReopen) {
+                itemToReopen.classList.add('show-actions');
+            }
+        }
+
         if (document.querySelector('#dashboard.active')) {
             renderDashboard();
         }
@@ -810,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
         text.value = transaction.text;
         category.value = transaction.category;
         amount.value = Math.abs(transaction.amount);
-        transactionDateInput.value = transaction.date.split('T')[0]; // Format for date input
+        transactionDateInput.value = transaction.date.split('T')[0];
         transactionType.checked = transaction.amount > 0;
         
         updateToggleUI();
@@ -825,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formSubmitBtn.innerHTML = '<i class="fas fa-check-circle"></i> Add Transaction';
 
         form.reset();
-        transactionDateInput.value = new Date().toISOString().split('T')[0]; // Default to today
+        transactionDateInput.value = new Date().toISOString().split('T')[0];
         
         updateToggleUI();
         transactionModal.classList.add('show');
@@ -976,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- MASTER CLICK LISTENER FOR TRANSACTION LIST ---
+    // --- NEW/UPDATED: MASTER CLICK LISTENER FOR TRANSACTION LIST ---
     list.addEventListener('click', event => {
         const listItem = event.target.closest('li');
         if (!listItem) return;
@@ -985,9 +1039,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Handle Delete Button Click
         if (event.target.closest('.delete-btn')) {
-            if (confirm('Are you sure you want to delete this transaction?')) {
+            if (confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
                 gsap.to(listItem, {
-                    duration: 0.5, opacity: 0, x: -50, ease: 'power2.in',
+                    duration: 0.3, opacity: 0, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: 0, marginBottom: 0, ease: 'power2.in',
                     onComplete: () => removeTransaction(transactionId)
                 });
             }
@@ -999,12 +1053,19 @@ document.addEventListener('DOMContentLoaded', () => {
             openModalForEdit(transactionId);
             return;
         }
+        
+        // Handle Toggling Action Panel by clicking the main area
+        if (event.target.closest('.transaction-main')) {
+            const isShowing = listItem.classList.contains('show-actions');
+            
+            // Close any other currently open item
+            const currentlyOpen = list.querySelector('.show-actions');
+            if(currentlyOpen && currentlyOpen !== listItem) {
+                currentlyOpen.classList.remove('show-actions');
+            }
 
-        // Handle Toggling Action Buttons on the LI itself
-        const isShowing = listItem.classList.contains('show-actions');
-        document.querySelectorAll('#list li.show-actions').forEach(li => li.classList.remove('show-actions'));
-        if (!isShowing) {
-            listItem.classList.add('show-actions');
+            // Toggle the clicked item
+            listItem.classList.toggle('show-actions');
         }
     });
 
